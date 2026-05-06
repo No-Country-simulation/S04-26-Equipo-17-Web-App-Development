@@ -34,3 +34,6 @@ build/
 
 ### Agentes ###
 CLAUDE.md
+
+### Profile ###
+/src/main/resources/application-local.yml
