@@ -1,5 +1,6 @@
 package com.northpay.backend.invitation;
 
+import com.northpay.backend.common.config.FrontendConfig;
 import com.northpay.backend.invitation.dto.InvitationRequest;
 import com.northpay.backend.invitation.dto.InvitationResponse;
 import com.northpay.backend.notification.EmailService;
@@ -18,6 +19,7 @@ public class InvitationService {
     private final ContractorRepository contractorRepository;
     //private final OnboardingRepository onboardingRepository;
     private final EmailService emailService;
+    private final FrontendConfig frontendConfig;
 
     @Transactional
     public InvitationResponse sendInvitation(InvitationRequest request) {
@@ -54,7 +56,7 @@ public class InvitationService {
         log.info("Email enviado al contratista: {}", contractor.getEmail());
 
         // Construir respuesta
-        String invitationLink = "https://northpay-s04-26-e17.pages.dev/onboarding?token=" + token;
+        String invitationLink = frontendConfig.url() + frontendConfig.onboardingPath() + "?token=" + token;
         return InvitationResponse.builder()
                 .onboardingId(1L)
                 .token(token)

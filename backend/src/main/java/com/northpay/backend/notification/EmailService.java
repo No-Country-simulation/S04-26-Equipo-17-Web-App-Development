@@ -1,6 +1,7 @@
 package com.northpay.backend.notification;
 
 import com.northpay.backend.common.config.BrevoConfig;
+import com.northpay.backend.common.config.FrontendConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -9,24 +10,25 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Slf4j
 public class EmailService {
 
     private final BrevoConfig config;
     private final RestClient restClient;
     private final EmailTemplateService templateService;
+    private final FrontendConfig frontendConfig;
 
-    public EmailService(BrevoConfig config, EmailTemplateService templateService) {
+    public EmailService(BrevoConfig config, EmailTemplateService templateService, FrontendConfig frontendConfig) {
         this.config = config;
         this.templateService = templateService;
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.brevo.com/v3")
                 .defaultHeader("api-key", config.apiKey())
                 .build();
+        this.frontendConfig = frontendConfig;
     }
 
     public void sendInvitationEmail(String toEmail, String token) {
-        String link = "https://northpay-s04-26-e17.pages.dev/onboarding?token=" + token;
+        String link = frontendConfig.url() + frontendConfig.onboardingPath() + "?token=" + token;
         String htmlContent = templateService.buildInvitationHtml(link);
         String plainText = templateService.buildPlainTextFallback(link);
         sendEmail(toEmail, "Invitación a NorthPay", htmlContent, plainText);
@@ -34,7 +36,6 @@ public class EmailService {
 
     public void sendNotificationEmail(String toEmail, String subject, String message) {
         String htmlContent = templateService.buildNotificationHtml(message);
-        // Versión texto plano simple (puedes mejorar)
         String plainText = message;
         sendEmail(toEmail, subject, htmlContent, plainText);
     }
