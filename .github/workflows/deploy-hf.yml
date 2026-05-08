@@ -1,0 +1,57 @@
+name: Deploy backend to HF Space
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-hf.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-hf-space
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Clone HF Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ vars.HF_USER }}
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          git clone "https://${HF_USER}:${HF_TOKEN}@huggingface.co/spaces/${HF_USER}/${HF_SPACE}" /tmp/hf-space
+
+      - name: Sync backend/ into Space clone
+        run: |
+          rsync -av --delete \
+            --exclude='.git/' \
+            --exclude='target/' \
+            --exclude='.idea/' \
+            --exclude='.vscode/' \
+            --exclude='*.iml' \
+            backend/ /tmp/hf-space/
+
+      - name: Commit and push to Space
+        working-directory: /tmp/hf-space
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes to deploy."
+            exit 0
+          fi
+
+          git add -A
+          git commit -m "Deploy ${GITHUB_SHA::7} from ${GITHUB_REF_NAME}
+
+          Source: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          git push origin main
