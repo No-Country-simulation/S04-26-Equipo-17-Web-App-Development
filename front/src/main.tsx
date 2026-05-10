@@ -5,11 +5,14 @@ import "./index.css";
 
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import App from "./App.tsx";
+import { AppProvider } from "./context/appContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
-      <App />
+      <AppProvider>
+        <App />
+      </AppProvider>
     </ThemeProvider>
   </StrictMode>
 );

@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import OnBoarding from './pages/onBoarding.tsx';
-import PersonalData from './pages/personalData.tsx';
-import Documents from './pages/documents.tsx';
-import IdentityVerify from './pages/identityVerify.tsx';
-import Sign from './pages/sign.tsx';
-import Payment from './pages/payment.tsx';  
+import OnBoarding from './pages/OnBoarding.tsx';
+import PersonalData from './pages/PersonalData.tsx';
+import Documents from './pages/Documents.tsx';
+import IdentityVerify from './pages/IdentityVerify.tsx';
+import Sign from './pages/Sign.tsx';
+import Payment from './pages/Payment.tsx';  
 
 export default function App() {
   return (

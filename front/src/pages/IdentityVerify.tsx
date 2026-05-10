@@ -5,7 +5,7 @@ export default function IdentityVerify() {
     return (
       <>
         <div>IdentityVerify</div>
-        <button onClick={() => navigate('/documents')}>Siguiente</button>
+        <button onClick={() => navigate('/sign')}>Siguiente</button>
       </>
     )
   }

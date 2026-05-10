@@ -1,10 +1,10 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
-export default function Sign() {
+export default function Documents() {
     const navigate = useNavigate();
     return (
-      <> 
-        <div>sign</div>
+      <>
+        <div>documents</div>
         <button onClick={() => navigate('/identityVerify')}>Siguiente</button>
       </>
     )
