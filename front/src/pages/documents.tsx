@@ -1,9 +1,11 @@
-import { Component } from 'react'
+import { useNavigate } from "react-router-dom";
 
-export default class Documents extends Component {
-  render() {
+export default function Documents() {
+    const navigate = useNavigate();
     return (
-      <div>documents</div>
+      <>
+        <div>documents</div>
+        <button onClick={() => navigate('/sign')}>Siguiente</button>
+      </>
     )
   }
-}

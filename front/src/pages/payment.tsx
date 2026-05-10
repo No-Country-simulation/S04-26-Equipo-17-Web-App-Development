@@ -1,9 +1,11 @@
-import { Component } from 'react'
+import { useNavigate } from 'react-router-dom';
 
-export default class Payment extends Component {
-  render() {
+export default function Payment() {
+    const navigate = useNavigate();
     return (
-      <div>payment</div>
+      <>
+        <div>payment</div>
+        <button onClick={() => navigate('/')}>Siguiente</button>
+      </>
     )
   }
-}

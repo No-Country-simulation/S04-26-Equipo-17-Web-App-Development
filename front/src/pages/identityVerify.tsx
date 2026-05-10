@@ -1,9 +1,11 @@
-import { Component } from 'react'
+import { useNavigate } from 'react-router-dom';
 
-export default class IdentityVerify extends Component {
-  render() {
+export default function IdentityVerify() {
+    const navigate = useNavigate();
     return (
-      <div>IdentityVerify</div>
+      <>
+        <div>IdentityVerify</div>
+        <button onClick={() => navigate('/documents')}>Siguiente</button>
+      </>
     )
   }
-}

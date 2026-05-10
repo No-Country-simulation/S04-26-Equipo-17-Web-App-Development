@@ -1,9 +1,12 @@
-import { Component } from 'react'
+import { useNavigate } from "react-router-dom";
 
-export default class PersonalData extends Component {
-  render() {
+export default function PersonalData() {
+    const navigate = useNavigate();
+
     return (
-      <div>personalData</div>
+      <>
+        <div>personalData</div>
+        <button onClick={() => navigate('/documents')}>Siguiente</button>
+      </>
     )
   }
-}

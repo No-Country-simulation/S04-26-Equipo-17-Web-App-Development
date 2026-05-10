@@ -1,9 +1,11 @@
-import { Component } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-export default class OnBoarding extends Component {
-    render() {
+export default function OnBoarding() {
+        const navigate = useNavigate();
         return (
-            <div>onBoarding</div>
+            <>
+                <div>onBoarding</div>
+                <button onClick={() => navigate('/personalData')}>Empezar OnBoarding</button>
+            </>
         )
-    }
 }
