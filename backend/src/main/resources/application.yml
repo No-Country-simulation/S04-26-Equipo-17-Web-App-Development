@@ -25,6 +25,13 @@ app:
   frontend:
     url: ${FRONTEND_URL}
     onboarding-path: /onboarding
+  storage:
+    endpoint: ${SUPABASE_STORAGE_ENDPOINT}
+    region: ${SUPABASE_STORAGE_REGION:us-east-1}
+    bucket: ${SUPABASE_STORAGE_BUCKET}
+    access-key: ${SUPABASE_STORAGE_ACCESS_KEY}
+    secret-key: ${SUPABASE_STORAGE_SECRET_KEY}
+    public-url-prefix: ${SUPABASE_STORAGE_PUBLIC_PREFIX}
 
 server:
   port: 7860

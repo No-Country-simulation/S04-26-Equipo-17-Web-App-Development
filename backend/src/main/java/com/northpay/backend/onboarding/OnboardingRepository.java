@@ -15,4 +15,6 @@ public interface OnboardingRepository extends JpaRepository<Onboarding, Long> {
     Optional<Onboarding> findByContractorId(Long contractorId);
 
     List<Onboarding> findByStatus(OnboardingStatus status);
+
+    boolean existsByContractorIdAndStatusNot(Long contractorId, OnboardingStatus status);
 }
