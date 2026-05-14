@@ -51,6 +51,8 @@ public class InvitationService {
                 .status(OnboardingStatus.INVITED)
                 .invitationToken(token)
                 .tokenExpiresAt(expiresAt)
+                .startedAt(now)
+                .updatedAt(now)
                 .build();
         onboarding = onboardingRepository.save(onboarding);
 
