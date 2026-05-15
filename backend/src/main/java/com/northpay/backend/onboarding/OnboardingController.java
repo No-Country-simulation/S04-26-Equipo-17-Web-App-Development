@@ -10,6 +10,7 @@ import com.northpay.backend.onboarding.dto.Step1Request;
 import com.northpay.backend.onboarding.dto.Step1Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -44,7 +45,11 @@ public class OnboardingController {
             @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
     })
     public ResponseEntity<ApiResponseBackend<Step1Response>> updateStep1(
-            @PathVariable Long id,
+            @PathVariable
+            @Schema(description = "ID del onboarding",
+                    example = "1",
+                    requiredMode = Schema.RequiredMode.REQUIRED)
+            Long id,
             @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Valid @RequestBody Step1Request request) {
 
@@ -75,7 +80,11 @@ public class OnboardingController {
             @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
     })
     public ResponseEntity<ApiResponseBackend<DocumentsUploadResponse>> uploadDocuments(
-            @PathVariable Long id,
+            @PathVariable
+            @Schema(description = "ID del onboarding",
+                    example = "1",
+                    requiredMode = Schema.RequiredMode.REQUIRED)
+            Long id,
             @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam("types") List<DocumentType> types) {
