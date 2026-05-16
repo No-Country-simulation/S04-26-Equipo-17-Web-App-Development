@@ -11,6 +11,11 @@ import com.northpay.backend.document.DocumentService;
 import com.northpay.backend.invitation.Contractor;
 import com.northpay.backend.invitation.ContractorRepository;
 import com.northpay.backend.onboarding.dto.Step1Request;
+import com.northpay.backend.onboarding.dto.Step4PaymentRequest;
+import com.northpay.backend.onboarding.dto.CorrectionCommentResponse;
+import com.northpay.backend.common.enums.DocumentType;
+import com.northpay.backend.common.enums.EventType;
+import com.northpay.backend.payment.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +35,9 @@ public class OnboardingService {
     private final ContractorRepository contractorRepository;
     private final StateMachineService stateMachineService;
     private final DocumentService documentService;
+    private final ContractPdfService contractPdfService;
+    private final PaymentService paymentService;
+    private final EventHistoryRepository eventHistoryRepository;
 
     @Transactional
     public Onboarding openLink(String token) {
@@ -86,6 +94,93 @@ public class OnboardingService {
         return new DocumentUploadResult(updated, stored);
     }
 
+    /**
+     * HU-03: genera el PDF del contrato con los datos del Paso 1.
+     * No cambia estado ni persiste (preview ≠ firma).
+     */
+    @Transactional(readOnly = true)
+    public byte[] generateContractPreview(Long id, String bearerToken) {
+        Onboarding onboarding = authorize(id, bearerToken);
+        Contractor contractor = onboarding.getContractor();
+        if (onboarding.getStatus() == OnboardingStatus.INVITED
+                || contractor.getFullName() == null
+                || contractor.getFullName().isBlank()) {
+            throw new InvalidStateTransitionException(
+                    "El contrato no puede generarse: el Paso 1 aún no está completo");
+        }
+        return contractPdfService.generate(onboarding);
+    }
+
+    /**
+     * HU-03: el contratista firma. Genera el PDF, lo guarda como SIGNED_CONTRACT
+     * y transiciona DOCUMENTS_UPLOADED → CONTRACT_SIGNED (current_step=4).
+     */
+    @Transactional
+    public ContractSignResult signContract(Long id, String bearerToken) {
+        Onboarding onboarding = authorize(id, bearerToken);
+        requireStatus(onboarding, OnboardingStatus.DOCUMENTS_UPLOADED);
+
+        byte[] pdf = contractPdfService.generate(onboarding);
+        Document doc = documentService.storeOrReplaceGenerated(
+                onboarding,
+                DocumentType.SIGNED_CONTRACT,
+                pdf,
+                "contrato-%d.pdf".formatted(id),
+                "application/pdf");
+
+        Onboarding updated = stateMachineService.transition(id, OnboardingAction.SIGN_CONTRACT);
+        return new ContractSignResult(updated, doc.getFileUrl());
+    }
+
+    /**
+     * HU-04: guarda el método de pago (JSONB) y transiciona
+     * CONTRACT_SIGNED → PAYMENT_CONFIGURED (current_step=5).
+     */
+    @Transactional
+    public Onboarding configurePayment(Long id, String bearerToken, Step4PaymentRequest request) {
+        Onboarding onboarding = authorize(id, bearerToken);
+        requireStatus(onboarding, OnboardingStatus.CONTRACT_SIGNED);
+
+        paymentService.savePaymentMethod(
+                onboarding.getContractor().getId(),
+                request.accountType(),
+                request.details());
+
+        return stateMachineService.transition(id, OnboardingAction.CONFIGURE_PAYMENT);
+    }
+
+    /**
+     * HU-04: sube la selfie (tipo SELFIE) y transiciona
+     * PAYMENT_CONFIGURED → PENDING_VERIFICATION.
+     */
+    @Transactional
+    public Onboarding submitSelfie(Long id, String bearerToken, MultipartFile file) {
+        Onboarding onboarding = authorize(id, bearerToken);
+        requireStatus(onboarding, OnboardingStatus.PAYMENT_CONFIGURED);
+
+        documentService.store(onboarding, DocumentType.SELFIE, file);
+
+        return stateMachineService.transition(id, OnboardingAction.SUBMIT_SELFIE);
+    }
+
+    /**
+     * HU-09: comentarios de corrección. Lee event_history con
+     * event=CORRECTION_REQUESTED ordenado por fecha.
+     */
+    @Transactional(readOnly = true)
+    public List<CorrectionCommentResponse> getCorrectionComments(Long id, String bearerToken) {
+        authorize(id, bearerToken);
+        return eventHistoryRepository
+                .findByOnboardingIdAndEventOrderByCreatedAtAsc(id, EventType.CORRECTION_REQUESTED)
+                .stream()
+                .map(e -> new CorrectionCommentResponse(
+                        e.getObservations(),
+                        e.getPreviousStatus(),
+                        e.getNewStatus(),
+                        e.getCreatedAt()))
+                .toList();
+    }
+
     private Onboarding authorize(Long id, String bearerToken) {
         if (bearerToken == null || bearerToken.isBlank()) {
             throw new InvalidTokenException("Token de invitación ausente en Authorization");
@@ -112,4 +207,6 @@ public class OnboardingService {
     }
 
     public record DocumentUploadResult(Onboarding onboarding, List<Document> documents) {}
+
+    public record ContractSignResult(Onboarding onboarding, String documentUrl) {}
 }
