@@ -3,7 +3,9 @@ package com.northpay.backend.onboarding;
 import com.northpay.backend.common.enums.OnboardingStatus;
 import com.northpay.backend.common.exception.InvalidStateTransitionException;
 import com.northpay.backend.common.exception.ResourceNotFoundException;
+import com.northpay.backend.invitation.Contractor;
 import com.northpay.backend.notification.NotificationService;
+import com.northpay.backend.notification.PusherEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,16 +116,21 @@ public class StateMachineService {
                                   OnboardingStatus to,
                                   OnboardingAction action) {
         String email = Optional.ofNullable(onboarding.getContractor())
-                .map(c -> c.getEmail())
+                .map(Contractor::getEmail)
                 .orElse(null);
         if (email == null) {
             log.warn("Onboarding {} sin contractor.email; se omite notificación", onboarding.getId());
             return;
         }
-        String message = "Onboarding #%d: %s → %s (acción: %s)"
-                .formatted(onboarding.getId(), from, to, action);
-        // NotificationService (Rol A) persiste la notificación, envía email
-        // y emite el evento Pusher hacia el dashboard del operador.
-        notificationService.notify(email, message);
+
+        PusherEvent event = PusherEvent.statusChanged(
+                onboarding.getId(),
+                email,
+                from.name(),
+                to.name(),
+                action.name()
+        );
+
+        notificationService.notifyEvent(event, email);
     }
 }

@@ -4,6 +4,7 @@ package com.northpay.backend.invitation;
 import com.northpay.backend.common.dto.ApiResponseBackend;
 import com.northpay.backend.invitation.dto.InvitationRequest;
 import com.northpay.backend.invitation.dto.InvitationResponse;
+import com.northpay.backend.invitation.dto.TokenValidationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -37,5 +38,37 @@ public class InvitationController {
             @Valid @RequestBody InvitationRequest request) {
         InvitationResponse response = invitationService.sendInvitation(request);
         return ResponseEntity.ok(ApiResponseBackend.ok(response));
+    }
+
+    @GetMapping("/{token}")
+    @Operation(summary = "Validar token de invitación",
+            description = "Valida el token, activa el onboarding (INVITED→IN_PROGRESS) y devuelve los datos de sesión.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Token válido, sesión iniciada"),
+            @ApiResponse(responseCode = "401", description = "Token inválido"),
+            @ApiResponse(responseCode = "410", description = "Token expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<TokenValidationResponse>> validateToken(
+            @PathVariable String token) {
+        TokenValidationResponse response = invitationService.validateToken(token);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Token válido", response));
+    }
+
+    @PostMapping("/{id}/resend")
+    @Operation(summary = "Reenviar invitación",
+            description = "Genera un nuevo token de invitación y envía un nuevo correo. Útil cuando el token expiró.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Invitación reenviada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Onboarding no encontrado")
+    })
+    public ResponseEntity<ApiResponseBackend<InvitationResponse>> resendInvitation(
+            @PathVariable
+            @Schema(description = "ID del onboarding",
+                    example = "123",
+                    requiredMode = Schema.RequiredMode.REQUIRED
+            )
+            Long id) {
+        InvitationResponse response = invitationService.resendInvitation(id);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Invitación reenviada", response));
     }
 }
