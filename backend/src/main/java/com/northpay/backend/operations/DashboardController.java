@@ -2,6 +2,7 @@ package com.northpay.backend.operations;
 
 import com.northpay.backend.common.dto.ApiResponseBackend;
 import com.northpay.backend.operations.dto.DashboardItem;
+import com.northpay.backend.operations.dto.TimelineEvent;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -47,5 +48,20 @@ public class DashboardController {
 
         List<DashboardItem> items = dashboardService.getDashboard(status, step, country);
         return ResponseEntity.ok(ApiResponseBackend.ok("Dashboard cargado", items));
+    }
+
+    @GetMapping("/{id}/timeline")
+    @Operation(summary = "Obtener el historial de un onboarding", description = "Endpoint para obtener el historial de un onboarding")
+    @ApiResponse(
+            responseCode = "200",
+            description = "Historial cargado"
+    )
+    public ResponseEntity<ApiResponseBackend<List<TimelineEvent>>> timeline(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long id) {
+
+        authService.getCurrentOperator(authHeader);
+        List<TimelineEvent> timeline = dashboardService.getTimeline(id);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Historial cargado", timeline));
     }
 }

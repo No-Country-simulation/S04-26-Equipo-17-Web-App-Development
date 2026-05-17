@@ -1,9 +1,11 @@
 package com.northpay.backend.operations;
 
+import com.northpay.backend.onboarding.EventHistoryRepository;
 import com.northpay.backend.onboarding.Onboarding;
 import com.northpay.backend.onboarding.OnboardingRepository;
 import com.northpay.backend.common.enums.OnboardingStatus;
 import com.northpay.backend.operations.dto.DashboardItem;
+import com.northpay.backend.operations.dto.TimelineEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import java.util.List;
 public class DashboardService {
 
     private final OnboardingRepository onboardingRepository;
+    private final EventHistoryRepository eventHistoryRepository;
 
     @Transactional(readOnly = true)
     public List<DashboardItem> getDashboard(String statusFilter,
@@ -60,5 +63,19 @@ public class DashboardService {
                 hoursSinceUpdate,
                 slaBreach
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<TimelineEvent> getTimeline(Long onboardingId) {
+        return eventHistoryRepository.findLatest(onboardingId)
+                .stream()
+                .map(e -> new TimelineEvent(
+                        e.getId(),
+                        e.getEvent(),
+                        e.getPreviousStatus(),
+                        e.getNewStatus(),
+                        e.getObservations(),
+                        e.getCreatedAt()))
+                .toList();
     }
 }
