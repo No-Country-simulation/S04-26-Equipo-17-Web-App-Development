@@ -46,8 +46,7 @@ public class VerificationService {
         updated.setCurrentStep(stepNumber);
         onboardingRepository.save(updated);
 
-        // Lógica de cascada: si el paso rechazado es el 2, invalidar contrato
-        if (stepNumber == 2) {
+        if (stepNumber == 1 || stepNumber == 2) {
             invalidateContract(onboardingId);
         }
 
