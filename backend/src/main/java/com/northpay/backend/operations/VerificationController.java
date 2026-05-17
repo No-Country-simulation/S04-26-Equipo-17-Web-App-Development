@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,13 +26,13 @@ public class VerificationController {
     @PostMapping("/{id}/request-correction")
     @Operation(summary = "Solicitar corrección", description = "Solicita una corrección al onboarding")
     public ResponseEntity<ApiResponseBackend<Void>> requestCorrection(
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal String principal,
             @PathVariable
             @Schema(description = "ID del onboarding")
             Long id,
             @Valid @RequestBody CorrectionRequest request) {
 
-        authService.getCurrentOperator(authHeader);
+        authService.getCurrentOperator(principal);
         verificationService.requestCorrection(id, request.stepNumber(), request.observations());
 
         return ResponseEntity.ok(ApiResponseBackend.ok("Corrección solicitada", null));
@@ -39,10 +41,10 @@ public class VerificationController {
     @PostMapping("/{id}/activate")
     @Operation(summary = "Activar cuenta", description = "Aprueba definitivamente el onboarding. Solo desde PENDING_VERIFICATION.")
     public ResponseEntity<ApiResponseBackend<Void>> activate(
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal String principal,
             @PathVariable Long id) {
 
-        authService.getCurrentOperator(authHeader);
+        authService.getCurrentOperator(principal);
         verificationService.activate(id);
         return ResponseEntity.ok(ApiResponseBackend.ok("Cuenta activada", null));
     }
@@ -50,10 +52,10 @@ public class VerificationController {
     @PostMapping("/{id}/reject")
     @Operation(summary = "Rechazar cuenta", description = "Rechaza el onboarding (fraude/riesgo). Válido desde cualquier estado.")
     public ResponseEntity<ApiResponseBackend<Void>> reject(
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal String principal,
             @PathVariable Long id) {
 
-        authService.getCurrentOperator(authHeader);
+        authService.getCurrentOperator(principal);
         verificationService.reject(id);
         return ResponseEntity.ok(ApiResponseBackend.ok("Cuenta rechazada", null));
     }

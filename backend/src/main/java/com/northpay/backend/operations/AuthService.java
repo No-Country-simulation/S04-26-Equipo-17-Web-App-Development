@@ -1,6 +1,7 @@
 package com.northpay.backend.operations;
 
 import com.northpay.backend.common.exception.InvalidTokenException;
+import com.northpay.backend.common.exception.ResourceNotFoundException;
 import com.northpay.backend.operations.dto.LoginRequest;
 import com.northpay.backend.operations.dto.LoginResponse;
 import lombok.RequiredArgsConstructor;
@@ -49,11 +50,14 @@ public class AuthService {
                 .orElseThrow(() -> new InvalidTokenException("Operador no encontrado"));
     }
 
-    public Operator getCurrentOperator(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new InvalidTokenException("Token ausente o mal formado");
-        }
-        String token = authHeader.substring("Bearer ".length()).trim();
-        return validateToken(token);
+    /**
+     * Obtiene el operador actualmente autenticado a partir de su email (username).
+     * * @param email El email obtenido del contexto de seguridad de Spring Security.
+     * @return La entidad Operator correspondiente.
+     * @throws ResourceNotFoundException Si el operador no existe en el sistema.
+     */
+    public Operator getCurrentOperator(String email) {
+        return operatorRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Operador no encontrado con el email: " + email));
     }
 }

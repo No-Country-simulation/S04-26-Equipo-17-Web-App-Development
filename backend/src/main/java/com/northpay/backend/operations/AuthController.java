@@ -13,12 +13,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Operadores", description = "Endpoint de autenticación")
 public class AuthController {
 
@@ -37,15 +38,16 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Obtener información del operador autenticado", description = "Endpoint para obtener información del operador autenticado")
     @ApiResponse(
             responseCode = "200",
             description = "Operador autenticado"
     )
     public ResponseEntity<ApiResponseBackend<OperatorResponse>> me(
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+            @AuthenticationPrincipal String principal) {
 
-        Operator operator = authService.getCurrentOperator(authHeader);
+        Operator operator = authService.getCurrentOperator(principal);
 
         OperatorResponse response = new OperatorResponse(
                 operator.getId(),
