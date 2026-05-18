@@ -15,16 +15,16 @@ const STEPS = [
 ];
 
 export const Wizard = () => {
-  const [current, setCurrent] = useState(0);
-  const [loading, setLoading] = useState(false);
-
-  const isLast = current === STEPS.length - 1;
-
-  const StepComponent = STEPS[current].component;
+  const [current] = useState(0);
+  const totalSteps = STEPS.length;
+  const stepTitle = STEPS[current].title;
 
   return (
     <div>
       <h1>Wizard</h1>
+      <p>
+        Step {current + 1} of {totalSteps}: {stepTitle}
+      </p>
     </div>
   );
 };
