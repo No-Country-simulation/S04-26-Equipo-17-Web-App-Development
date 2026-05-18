@@ -4,7 +4,7 @@ spring:
   profiles:
     active: local
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-1-us-east-2.pooler.supabase.com:6543/postgres}
     username: ${SUPABASE_DB_USER}
     password: ${SUPABASE_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -25,6 +25,18 @@ app:
   frontend:
     url: ${FRONTEND_URL}
     onboarding-path: /onboarding
+  storage:
+    endpoint: ${SUPABASE_STORAGE_ENDPOINT}
+    region: ${SUPABASE_STORAGE_REGION}
+    bucket: ${SUPABASE_STORAGE_BUCKET}
+    access-key: ${SUPABASE_STORAGE_ACCESS_KEY}
+    secret-key: ${SUPABASE_STORAGE_SECRET_KEY}
+    public-url-prefix: ${SUPABASE_STORAGE_PUBLIC_PREFIX}
+  pusher:
+    app-id: ${PUSHER_APP_ID}
+    key: ${PUSHER_KEY}
+    secret: ${PUSHER_SECRET}
+    cluster: ${PUSHER_CLUSTER}
 
 server:
   port: 7860
