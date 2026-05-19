@@ -9,6 +9,10 @@ public record InvitationResponse (
         Long onboardingId,
         String token,
         LocalDateTime expiresAt,
-        String invitationLink
+        String invitationLink,
+        String monthlyFee,
+        String contractDuration,
+        String currency,
+        String company
 ){
 }

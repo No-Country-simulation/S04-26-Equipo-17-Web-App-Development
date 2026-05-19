@@ -63,12 +63,21 @@ public class InvitationService {
         emailService.sendInvitationEmail(contractor.getEmail(), token);
         log.info("Invitación enviada: contractor={} onboarding={}", contractor.getEmail(), onboarding.getId());
 
+        String monthlyFee = "USD 5.200";
+        String contractDuration = "12 meses";
+        String currency = "COP / USD";
+        String company = "Lattice & Loop";
+
         String invitationLink = frontendConfig.url() + frontendConfig.onboardingPath() + "?token=" + token;
         return InvitationResponse.builder()
                 .onboardingId(onboarding.getId())
                 .token(token)
                 .expiresAt(expiresAt)
                 .invitationLink(invitationLink)
+                .monthlyFee(monthlyFee)
+                .contractDuration(contractDuration)
+                .currency(currency)
+                .company(company)
                 .build();
     }
 
