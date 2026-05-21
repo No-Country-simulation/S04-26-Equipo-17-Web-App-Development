@@ -1,12 +1,12 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
-import { Wizard } from "./components/wizard/Wizard.tsx";
 import { WizardProgress } from "./components/wizard/WizardProgress.tsx";
 import Documents from "./pages/Documents.tsx";
 import IdentityVerify from "./pages/IdentityVerify.tsx";
 import OnBoarding from "./pages/OnBoarding.tsx";
 import Payment from "./pages/Payment.tsx";
+import PersonalData from "./pages/PersonalData.tsx";
 import Sign from "./pages/Sign.tsx";
 
 export default function App() {
@@ -18,7 +18,7 @@ export default function App() {
 
         {/* Rutas protegidas: requieren sesión activa (onboardingId + sessionToken) */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/personalData" element={<Wizard />} />
+          <Route path="/personalData" element={<PersonalData />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/sign" element={<Sign />} />
           <Route path="/payment" element={<Payment />} />
