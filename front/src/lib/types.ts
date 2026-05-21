@@ -16,7 +16,7 @@ export interface InvitationResponse {
   status: OnboardingStatus;
   fullName: string;
   email: string;
-  // Datos del contrato — puede que el backend los incluya en la validación
+  expiresAt?: string;
   company?: string;
   monthlyFee?: string;
   contractDuration?: string;

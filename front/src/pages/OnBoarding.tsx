@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useApp } from "@/context/appContext";
 import { useInvitation } from "@/lib/queries";
 import type { InvitationResponse } from "@/lib/types";
+import { daysUntilExpiry } from "@/lib/utils";
 
 const REQUIREMENTS = [
   {
@@ -97,7 +98,7 @@ export default function OnBoarding() {
 
           <div className="relative z-10">
             <div className="mt-10 rounded-full bg-[#f6d9ce] px-4 py-2 text-xs font-semibold text-[#f0705d]">
-              ● Invitación · expira en 6 días
+              ● Invitación · expira en {daysUntilExpiry(data.expiresAt)}
             </div>
 
             <div className="mt-7 space-y-4">
