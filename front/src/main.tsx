@@ -6,12 +6,17 @@ import "./index.css";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import App from "./App.tsx";
 import { AppProvider } from "./context/appContext.tsx";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
       <AppProvider>
-        <App />
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
       </AppProvider>
     </ThemeProvider>
   </StrictMode>
