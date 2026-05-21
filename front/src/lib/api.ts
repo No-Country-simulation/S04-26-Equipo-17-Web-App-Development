@@ -1,11 +1,10 @@
 const BASE_URL = "https://n4nd0-northpay-backend.hf.space";
 
 export class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
+  status: number;
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
     this.name = "ApiError";
   }
 }
