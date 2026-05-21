@@ -1,17 +1,13 @@
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
-interface ProtectedRouteProps {
-  nextpage?: string;
-  requiredStep?: number;
-}
+import { useApp } from "@/context/appContext";
 
-export default function ProtectedRoute({
-  nextpage,
-  requiredStep,
-}: ProtectedRouteProps) {
-  // TODO: implementar lógica de protección de rutas
-  void nextpage;
-  void requiredStep;
+export default function ProtectedRoute() {
+  const { session } = useApp();
+
+  if (!session) {
+    return <Navigate to="/" replace />;
+  }
 
   return <Outlet />;
 }

@@ -1,26 +1,68 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+
+const SESSION_KEY = "northpay_session";
+
+interface AppSession {
+  onboardingId: number;
+  sessionToken: string;
+  currentStep: number;
+  fullName: string;
+  email: string;
+}
 
 interface AppContextType {
-  currentStep: number;
-  goToStep: (step: number) => void;
+  session: AppSession | null;
+  setSession: (session: AppSession) => void;
+  updateStep: (step: number) => void;
+  clearSession: () => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
+function loadSession(): AppSession | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as AppSession) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(session: AppSession) {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [session, setSessionState] = useState<AppSession | null>(loadSession);
 
-  const goToStep = (step: number) => {
-    setCurrentStep(step);
-  };
+  const setSession = useCallback((next: AppSession) => {
+    saveSession(next);
+    setSessionState(next);
+  }, []);
 
-  return <AppContext.Provider value={{ currentStep, goToStep }}>{children}</AppContext.Provider>;
+  const updateStep = useCallback((step: number) => {
+    setSessionState((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, currentStep: step };
+      saveSession(next);
+      return next;
+    });
+  }, []);
+
+  const clearSession = useCallback(() => {
+    sessionStorage.removeItem(SESSION_KEY);
+    setSessionState(null);
+  }, []);
+
+  return (
+    <AppContext.Provider value={{ session, setSession, updateStep, clearSession }}>
+      {children}
+    </AppContext.Provider>
+  );
 }
 
 export function useApp() {
   const context = useContext(AppContext);
-  if (!context) {
-    throw new Error("useApp must be used within AppProvider");
-  }
+  if (!context) throw new Error("useApp must be used within AppProvider");
   return context;
 }
