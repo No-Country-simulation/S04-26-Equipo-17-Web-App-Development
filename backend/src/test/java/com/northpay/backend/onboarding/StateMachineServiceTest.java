@@ -186,6 +186,36 @@ class StateMachineServiceTest {
         verifyNoInteractions(notificationService);
     }
 
+    // ---------- 6b. No se puede saltar pasos hacia adelante ----------
+
+    static Stream<Arguments> stepSkips() {
+        return Stream.of(
+                // saltar firma de contrato sin haber subido documentos
+                Arguments.of(OnboardingStatus.IN_PROGRESS, OnboardingAction.SIGN_CONTRACT),
+                // saltar del paso 2 al 4 (pago) sin firmar contrato
+                Arguments.of(OnboardingStatus.IN_PROGRESS, OnboardingAction.CONFIGURE_PAYMENT),
+                Arguments.of(OnboardingStatus.DOCUMENTS_UPLOADED, OnboardingAction.CONFIGURE_PAYMENT),
+                // saltar a selfie sin configurar pago
+                Arguments.of(OnboardingStatus.DOCUMENTS_UPLOADED, OnboardingAction.SUBMIT_SELFIE),
+                Arguments.of(OnboardingStatus.CONTRACT_SIGNED, OnboardingAction.SUBMIT_SELFIE),
+                // re-firmar un contrato ya firmado
+                Arguments.of(OnboardingStatus.CONTRACT_SIGNED, OnboardingAction.SIGN_CONTRACT)
+        );
+    }
+
+    @ParameterizedTest(name = "{0} + {1} (salto) lanza")
+    @MethodSource("stepSkips")
+    void noSePuedeSaltarPasos(OnboardingStatus from, OnboardingAction action) {
+        Onboarding onboarding = onboardingWith(from, 2, CONTRACTOR_EMAIL);
+        when(onboardingRepository.findById(ONBOARDING_ID)).thenReturn(Optional.of(onboarding));
+
+        assertThatThrownBy(() -> stateMachineService.transition(ONBOARDING_ID, action))
+                .isInstanceOf(InvalidStateTransitionException.class);
+
+        verify(onboardingRepository, never()).save(any());
+        verifyNoInteractions(notificationService);
+    }
+
     // ---------- 7. ResourceNotFoundException si onboarding no existe ----------
 
     @Test
