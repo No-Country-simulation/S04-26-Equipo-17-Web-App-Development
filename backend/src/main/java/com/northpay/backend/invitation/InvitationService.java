@@ -63,6 +63,7 @@ public class InvitationService {
         String token = UUID.randomUUID().toString();
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiresAt = now.plusDays(7);
+        String timeRemaining = formatTimeRemaining(expiresAt);
 
         Onboarding onboarding = Onboarding.builder()
                 .contractor(contractor)
@@ -89,6 +90,7 @@ public class InvitationService {
                 .token(token)
                 .expiresAt(expiresAt)
                 .invitationLink(invitationLink)
+                .timeRemaining(timeRemaining)
                 .monthlyFee(monthlyFee)
                 .contractDuration(contractDuration)
                 .currency(currency)
@@ -98,12 +100,11 @@ public class InvitationService {
 
     public InvitationResponse validateToken(String token) {
         Onboarding onboarding = onboardingService.openLink(token);
-        Contractor contractor = onboarding.getContractor();
 
-        // Construir el enlace de invitación (mismo que se usa en sendInvitation)
         String invitationLink = frontendConfig.url() + frontendConfig.onboardingPath() + "?token=" + token;
 
-        // Estos valores están hardcodeados en sendInvitation; los mantenemos consistentes.
+        String timeRemaining = formatTimeRemaining(onboarding.getTokenExpiresAt());
+
         String monthlyFee = "USD 5.200";
         String contractDuration = "12 meses";
         String currency = "COP / USD";
@@ -114,6 +115,7 @@ public class InvitationService {
                 .token(token)
                 .expiresAt(onboarding.getTokenExpiresAt())
                 .invitationLink(invitationLink)
+                .timeRemaining(timeRemaining)
                 .monthlyFee(monthlyFee)
                 .contractDuration(contractDuration)
                 .currency(currency)
@@ -146,6 +148,31 @@ public class InvitationService {
                 .token(token)
                 .expiresAt(expiresAt)
                 .invitationLink(invitationLink)
+                .timeRemaining(formatTimeRemaining(expiresAt))
+                .build();
+    }
+
+    public InvitationResponse getActiveInvitationByEmail(String email) {
+        Contractor contractor = contractorRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("No existe un contratista con el email " + email));
+
+        Onboarding onboarding = onboardingRepository
+                .findByContractorIdAndStatusNot(contractor.getId(), OnboardingStatus.REJECTED)
+                .orElseThrow(() -> new ResourceNotFoundException("No hay un onboarding activo para el email " + email));
+
+        String timeRemaining = formatTimeRemaining(onboarding.getTokenExpiresAt());
+        String invitationLink = frontendConfig.url() + frontendConfig.onboardingPath() + "?token=" + onboarding.getInvitationToken();
+
+        return InvitationResponse.builder()
+                .onboardingId(onboarding.getId())
+                .token(onboarding.getInvitationToken())
+                .expiresAt(onboarding.getTokenExpiresAt())
+                .invitationLink(invitationLink)
+                .timeRemaining(timeRemaining)
+                .monthlyFee("USD 5.200")
+                .contractDuration("12 meses")
+                .currency("COP / USD")
+                .company("Lattice & Loop")
                 .build();
     }
 

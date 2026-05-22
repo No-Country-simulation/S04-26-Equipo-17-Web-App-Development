@@ -13,6 +13,7 @@ public record InvitationResponse (
         String monthlyFee,
         String contractDuration,
         String currency,
-        String company
+        String company,
+        String timeRemaining
 ){
 }
