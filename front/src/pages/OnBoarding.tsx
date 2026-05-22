@@ -66,7 +66,7 @@ export default function OnBoarding() {
   if (isError) return <OnBoardingError message={error?.message} />;
   if (!data) return null;
 
-  const firstName = data.fullName?.split(" ")[0] || data.email.split("@")[0];
+  const firstName = data.fullName?.split(" ")[0] ?? data.email?.split("@")[0] ?? "Usuario";
   const company = data.company ?? "Lattice & Loop";
   const highlights = buildHighlights(data);
 
