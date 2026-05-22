@@ -11,7 +11,6 @@ export type OnboardingStatus =
 
 export interface InvitationResponse {
   onboardingId: number;
-  /** El backend devuelve este campo como "token", no "sessionToken" */
   token: string;
   expiresAt?: string;
   invitationLink?: string;
@@ -20,6 +19,8 @@ export interface InvitationResponse {
   monthlyFee?: string;
   contractDuration?: string;
   currency?: string;
+  fullName?: string;
+  email?: string;
 }
 
 export interface InvitationDetails {

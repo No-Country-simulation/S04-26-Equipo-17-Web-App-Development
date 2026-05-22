@@ -1,4 +1,4 @@
-import { Check, FileText, MessageCircle } from "lucide-react";
+import { Check, FileText } from "lucide-react";
 
 type StepItem = {
   number: number;
