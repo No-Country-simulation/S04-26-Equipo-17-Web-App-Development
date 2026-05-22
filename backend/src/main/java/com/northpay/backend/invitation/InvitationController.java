@@ -42,15 +42,15 @@ public class InvitationController {
 
     @GetMapping("/{token}")
     @Operation(summary = "Validar token de invitación",
-            description = "Valida el token, activa el onboarding (INVITED→IN_PROGRESS) y devuelve los datos de sesión.")
+            description = "Valida el token, activa el onboarding (INVITED→IN_PROGRESS) y devuelve los datos de la invitación.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Token válido, sesión iniciada"),
             @ApiResponse(responseCode = "401", description = "Token inválido"),
             @ApiResponse(responseCode = "410", description = "Token expirado")
     })
-    public ResponseEntity<ApiResponseBackend<TokenValidationResponse>> validateToken(
+    public ResponseEntity<ApiResponseBackend<InvitationResponse>> validateToken(
             @PathVariable String token) {
-        TokenValidationResponse response = invitationService.validateToken(token);
+        InvitationResponse response = invitationService.validateToken(token);
         return ResponseEntity.ok(ApiResponseBackend.ok("Token válido", response));
     }
 
