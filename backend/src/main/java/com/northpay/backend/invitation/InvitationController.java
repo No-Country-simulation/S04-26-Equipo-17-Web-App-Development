@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,15 +44,15 @@ public class InvitationController {
 
     @GetMapping("/{token}")
     @Operation(summary = "Validar token de invitación",
-            description = "Valida el token, activa el onboarding (INVITED→IN_PROGRESS) y devuelve los datos de sesión.")
+            description = "Valida el token, activa el onboarding (INVITED→IN_PROGRESS) y devuelve los datos de la invitación.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Token válido, sesión iniciada"),
             @ApiResponse(responseCode = "401", description = "Token inválido"),
             @ApiResponse(responseCode = "410", description = "Token expirado")
     })
-    public ResponseEntity<ApiResponseBackend<TokenValidationResponse>> validateToken(
+    public ResponseEntity<ApiResponseBackend<InvitationResponse>> validateToken(
             @PathVariable String token) {
-        TokenValidationResponse response = invitationService.validateToken(token);
+        InvitationResponse response = invitationService.validateToken(token);
         return ResponseEntity.ok(ApiResponseBackend.ok("Token válido", response));
     }
 
@@ -70,5 +72,18 @@ public class InvitationController {
             Long id) {
         InvitationResponse response = invitationService.resendInvitation(id);
         return ResponseEntity.ok(ApiResponseBackend.ok("Invitación reenviada", response));
+    }
+
+    @GetMapping("/by-email")
+    @Operation(summary = "Obtener invitación activa por email",
+            description = "Devuelve los datos del onboarding activo para el email dado, si existe.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Invitación activa encontrada"),
+            @ApiResponse(responseCode = "404", description = "No existe onboarding activo para ese email")
+    })
+    public ResponseEntity<ApiResponseBackend<InvitationResponse>> getByEmail(
+            @RequestParam @Email @NotBlank String email) {
+        InvitationResponse response = invitationService.getActiveInvitationByEmail(email);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Invitación activa encontrada", response));
     }
 }

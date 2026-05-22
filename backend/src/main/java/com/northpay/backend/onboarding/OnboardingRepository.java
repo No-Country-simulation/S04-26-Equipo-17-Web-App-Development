@@ -20,6 +20,8 @@ public interface OnboardingRepository extends JpaRepository<Onboarding, Long> {
 
     boolean existsByContractorIdAndStatusNot(Long contractorId, OnboardingStatus status);
 
+    Optional<Onboarding> findByContractorIdAndStatusNot(Long contractorId, OnboardingStatus status);
+
     @Query("""
     SELECT o FROM Onboarding o
     WHERE o.updatedAt < :cutoff
