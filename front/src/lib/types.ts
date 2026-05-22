@@ -11,12 +11,11 @@ export type OnboardingStatus =
 
 export interface InvitationResponse {
   onboardingId: number;
-  sessionToken: string;
-  currentStep: number;
-  status: OnboardingStatus;
-  fullName: string;
-  email: string;
+  /** El backend devuelve este campo como "token", no "sessionToken" */
+  token: string;
   expiresAt?: string;
+  invitationLink?: string;
+  timeRemaining?: string;
   company?: string;
   monthlyFee?: string;
   contractDuration?: string;

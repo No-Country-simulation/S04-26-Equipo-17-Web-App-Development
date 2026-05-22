@@ -30,7 +30,7 @@ interface Step1Body {
 }
 
 export function useStep1() {
-  const { session, updateStep } = useApp();
+  const { session, updateStep, updateFullName } = useApp();
 
   return useMutation({
     mutationFn: (body: Step1Body) => {
@@ -41,7 +41,10 @@ export function useStep1() {
         session.sessionToken
       );
     },
-    onSuccess: (data) => updateStep(data.currentStep),
+    onSuccess: (data) => {
+      updateStep(data.currentStep);
+      if (data.fullName) updateFullName(data.fullName);
+    },
   });
 }
 

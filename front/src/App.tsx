@@ -14,6 +14,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Ruta pública: el link de invitación llega con el token en la URL */}
+        <Route path="/onboarding" element={<OnBoarding />} />
+        {/* Alias legacy por si hay links viejos circulando */}
         <Route path="/invite/:token" element={<OnBoarding />} />
 
         {/* Rutas protegidas: requieren sesión activa (onboardingId + sessionToken) */}

@@ -14,6 +14,7 @@ interface AppContextType {
   session: AppSession | null;
   setSession: (session: AppSession) => void;
   updateStep: (step: number) => void;
+  updateFullName: (fullName: string) => void;
   clearSession: () => void;
 }
 
@@ -49,13 +50,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const updateFullName = useCallback((fullName: string) => {
+    setSessionState((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, fullName };
+      saveSession(next);
+      return next;
+    });
+  }, []);
+
   const clearSession = useCallback(() => {
     sessionStorage.removeItem(SESSION_KEY);
     setSessionState(null);
   }, []);
 
   return (
-    <AppContext.Provider value={{ session, setSession, updateStep, clearSession }}>
+    <AppContext.Provider value={{ session, setSession, updateStep, updateFullName, clearSession }}>
       {children}
     </AppContext.Provider>
   );

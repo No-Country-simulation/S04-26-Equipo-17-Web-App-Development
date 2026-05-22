@@ -13,7 +13,7 @@ import {
   IdCard,
   Wallet,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,7 +45,10 @@ function buildHighlights(data: InvitationResponse) {
 }
 
 export default function OnBoarding() {
-  const { token = "" } = useParams<{ token: string }>();
+  const { token: pathToken = "" } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
+  // Soporta ambos formatos: /onboarding?token=... (email link) y /invite/:token (legacy)
+  const token = searchParams.get("token") ?? pathToken;
   const navigate = useNavigate();
   const { setSession } = useApp();
 
@@ -53,12 +56,14 @@ export default function OnBoarding() {
 
   useEffect(() => {
     if (!data) return;
+    // El backend devuelve "token", no "sessionToken"; fullName/email/currentStep
+    // no vienen en esta respuesta — se populan después del paso 1.
     setSession({
       onboardingId: data.onboardingId,
-      sessionToken: data.sessionToken,
-      currentStep: data.currentStep,
-      fullName: data.fullName,
-      email: data.email,
+      sessionToken: data.token,
+      currentStep: 1,
+      fullName: "",
+      email: "",
     });
   }, [data, setSession]);
 

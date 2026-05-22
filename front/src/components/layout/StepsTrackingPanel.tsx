@@ -66,30 +66,6 @@ export function StepsTrackingPanel({
           </div>
         ))}
       </div>
-
-      <div className="mt-6 rounded-[16px] bg-[#ddd4fb] p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#b4a4f6] text-sm font-semibold text-white">
-            MV
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-[#212848]">Mara Velasco</p>
-            <p className="text-xs text-[#626a87]">Tu especialista · LATAM</p>
-          </div>
-        </div>
-
-        <p className="mt-3 text-sm leading-relaxed text-[#323a58]">
-          ¿Te trabaste? Suelo responder en menos de 20 min 👋
-        </p>
-
-        <button
-          type="button"
-          className="mt-4 inline-flex w-full items-center justify-center rounded-[12px] bg-white px-4 py-2.5 text-[1rem] font-semibold text-[#1f2740]"
-        >
-          <MessageCircle className="mr-2 h-4 w-4" />
-          Escribir a Mara
-        </button>
-      </div>
     </aside>
   );
 }

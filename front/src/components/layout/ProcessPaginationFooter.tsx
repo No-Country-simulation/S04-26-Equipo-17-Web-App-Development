@@ -7,6 +7,7 @@ type ProcessPaginationFooterProps = {
   nextLabel?: string;
   onBack?: () => void;
   onNext?: () => void;
+  nextDisabled?: boolean;
   className?: string;
 };
 
@@ -16,6 +17,7 @@ export function ProcessPaginationFooter({
   nextLabel = "Continuar",
   onBack,
   onNext,
+  nextDisabled = false,
   className,
 }: ProcessPaginationFooterProps) {
   return (
@@ -47,7 +49,8 @@ export function ProcessPaginationFooter({
         <Button
           type="button"
           onClick={onNext}
-          className="h-11 rounded-[12px] bg-[#182237] px-5 text-base font-semibold text-white hover:bg-[#12192a]"
+          disabled={nextDisabled}
+          className="h-11 rounded-[12px] bg-[#182237] px-5 text-base font-semibold text-white hover:bg-[#12192a] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {nextLabel}
           <ArrowRight className="ml-1 h-4 w-4" />
