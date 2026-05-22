@@ -11,10 +11,23 @@ import { Input } from "@/components/ui/input";
 const TAX_REGIMES = ["Simple", "Común", "No declarante"] as const;
 type TaxRegime = (typeof TAX_REGIMES)[number];
 
+const COUNTRIES = [
+  { code: "CO", label: "Colombia", flag: "🇨🇴" },
+  { code: "MX", label: "México", flag: "🇲🇽" },
+  { code: "AR", label: "Argentina", flag: "🇦🇷" },
+  { code: "PE", label: "Perú", flag: "🇵🇪" },
+  { code: "ES", label: "España", flag: "🇪🇸" },
+] as const;
+
+type CountryCode = (typeof COUNTRIES)[number]["code"];
+
 export default function PersonalData() {
   const navigate = useNavigate();
   const [taxRegime, setTaxRegime] = useState<TaxRegime>("Simple");
   const [chargesIva, setChargesIva] = useState<boolean>(false);
+  const [country, setCountry] = useState<CountryCode>("CO");
+
+  const selectedCountry = COUNTRIES.find((c) => c.code === country)!;
 
   return (
     <main className="min-h-dvh bg-[#efe9e1]">
@@ -42,8 +55,8 @@ export default function PersonalData() {
                       ¡Empecemos por lo básico! 👋
                     </h1>
                     <p className="mt-1 max-w-[66ch] text-[1.15rem] leading-relaxed text-[#3f4760]">
-                      Los usamos para emitir tu contrato y configurar el cumplimiento fiscal en
-                      Colombia.
+                      Los usamos para emitir tu contrato y configurar el cumplimiento fiscal en{" "}
+                      {selectedCountry.label}.
                     </p>
                   </div>
                 </div>
@@ -56,28 +69,28 @@ export default function PersonalData() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FieldGroup label="Nombre legal">
                       <Input
-                        placeholder="Sofía"
+                        placeholder="Tu nombre legal"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base"
                       />
                     </FieldGroup>
 
                     <FieldGroup label="Apellidos">
                       <Input
-                        placeholder="Restrepo Quintero"
+                        placeholder="Tus apellidos"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base"
                       />
                     </FieldGroup>
 
                     <FieldGroup label="Cómo te llamamos" hint="Tu preferido">
                       <Input
-                        placeholder="Sofi"
+                        placeholder="¿Cómo te gusta que te llamen?"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base"
                       />
                     </FieldGroup>
 
                     <FieldGroup label="Fecha de nacimiento" hint="DD/MM/AAAA">
                       <Input
-                        placeholder="14 / 03 / 1992"
+                        placeholder="DD / MM / AAAA"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base font-mono"
                       />
                     </FieldGroup>
@@ -93,19 +106,24 @@ export default function PersonalData() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FieldGroup label="País de residencia">
                       <div className="flex h-11 w-full items-center gap-2 rounded-[12px] border border-[#e0d8cc] bg-white px-4">
-                        <span className="text-base">🇨🇴</span>
-                        <select className="flex-1 bg-transparent text-base text-[#1b2234] outline-none">
-                          <option value="CO">Colombia</option>
-                          <option value="MX">México</option>
-                          <option value="AR">Argentina</option>
-                          <option value="PE">Perú</option>
+                        <span className="text-base">{selectedCountry.flag}</span>
+                        <select
+                          value={country}
+                          onChange={(e) => setCountry(e.target.value as CountryCode)}
+                          className="flex-1 bg-transparent text-base text-[#1b2234] outline-none"
+                        >
+                          {COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.code}>
+                              {c.label}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </FieldGroup>
 
-                    <FieldGroup label="Cédula/CC" hint="10 dígitos">
+                    <FieldGroup label="Documento de identificación">
                       <Input
-                        placeholder="1.014.789.332"
+                        placeholder="0.000.000.000"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base font-mono"
                       />
                     </FieldGroup>
@@ -167,7 +185,7 @@ export default function PersonalData() {
                     <FieldGroup label="Teléfono">
                       <Input
                         type="tel"
-                        placeholder="+57 300 123 4567"
+                        placeholder="+57 300 000 0000"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base"
                       />
                     </FieldGroup>
@@ -175,7 +193,7 @@ export default function PersonalData() {
                     <FieldGroup label="Correo">
                       <Input
                         type="email"
-                        placeholder="sofia@ejemplo.com"
+                        placeholder="tu@correo.com"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base"
                       />
                     </FieldGroup>
@@ -194,8 +212,9 @@ export default function PersonalData() {
           <aside className="border-l border-[#ddd4c8] bg-[#f7f3ed] p-4">
             <StepsTrackingPanel
               userName="Sofia Restrepo"
-              country="Colombia"
-              currency="COP"
+              country={selectedCountry.label}
+              countryCode={selectedCountry.code}
+              currency={selectedCountry.code}
               steps={[
                 { number: 1, label: "Datos personales", active: true },
                 { number: 2, label: "Documentos" },

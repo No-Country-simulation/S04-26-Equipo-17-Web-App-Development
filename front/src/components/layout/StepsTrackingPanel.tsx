@@ -10,6 +10,7 @@ type StepItem = {
 type StepsTrackingPanelProps = {
   userName?: string;
   country?: string;
+  countryCode?: string;
   currency?: string;
   steps?: StepItem[];
 };
@@ -25,6 +26,7 @@ const defaultSteps: StepItem[] = [
 export function StepsTrackingPanel({
   userName = "Sofia Restrepo",
   country = "Colombia",
+  countryCode = "CO",
   currency = "COP",
   steps = defaultSteps,
 }: StepsTrackingPanelProps) {
@@ -33,7 +35,7 @@ export function StepsTrackingPanel({
       <p className="text-xs font-semibold tracking-wide text-[#7f8597] uppercase">ACTIVACION</p>
       <h3 className="mt-1 text-[2.1rem] leading-tight font-semibold text-[#1a2235]">{userName}</h3>
       <p className="mt-2 text-sm text-[#3f4760]">
-        CO <span className="mx-1.5">{country}</span> · {currency}
+        {countryCode} <span className="mx-1.5">{country}</span> · {currency}
       </p>
 
       <div className="mt-5 space-y-2.5">
