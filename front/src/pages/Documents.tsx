@@ -52,7 +52,7 @@ function getInitials(name: string) {
 
 export default function Documents() {
   const navigate = useNavigate();
-  const { session } = useApp();
+  const { session, savedAt } = useApp();
   const uploadMutation = useUploadDocuments();
 
   // Archivos seleccionados localmente — aún no subidos
@@ -288,6 +288,7 @@ export default function Documents() {
 
             <ProcessPaginationFooter
               className="rounded-none border-0 border-t border-[#ddd4c8] px-6"
+              savedAt={savedAt}
               onBack={() => navigate("/personalData")}
               onNext={handleNext}
               nextDisabled={!requiredReady || isUploading}

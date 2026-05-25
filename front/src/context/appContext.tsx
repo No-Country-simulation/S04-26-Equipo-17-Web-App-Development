@@ -12,9 +12,11 @@ interface AppSession {
 
 interface AppContextType {
   session: AppSession | null;
+  savedAt: Date | null;
   setSession: (session: AppSession) => void;
   updateStep: (step: number) => void;
   updateFullName: (fullName: string) => void;
+  updateSavedAt: (date: Date) => void;
   clearSession: () => void;
 }
 
@@ -35,6 +37,7 @@ function saveSession(session: AppSession) {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [session, setSessionState] = useState<AppSession | null>(loadSession);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
 
   const setSession = useCallback((next: AppSession) => {
     saveSession(next);
@@ -59,13 +62,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const updateSavedAt = useCallback((date: Date) => {
+    setSavedAt(date);
+  }, []);
+
   const clearSession = useCallback(() => {
     sessionStorage.removeItem(SESSION_KEY);
     setSessionState(null);
   }, []);
 
   return (
-    <AppContext.Provider value={{ session, setSession, updateStep, updateFullName, clearSession }}>
+    <AppContext.Provider value={{ session, savedAt, setSession, updateStep, updateFullName, updateSavedAt, clearSession }}>
       {children}
     </AppContext.Provider>
   );

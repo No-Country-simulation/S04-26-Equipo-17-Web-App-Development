@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 type ProcessPaginationFooterProps = {
-  savedLabel?: string;
+  savedAt?: Date | null;
   backLabel?: string;
   nextLabel?: string;
   onBack?: () => void;
@@ -11,8 +11,14 @@ type ProcessPaginationFooterProps = {
   className?: string;
 };
 
+function formatSavedAt(date: Date): string {
+  const h = date.getHours().toString().padStart(2, "0");
+  const m = date.getMinutes().toString().padStart(2, "0");
+  return `Guardado a las ${h}:${m}`;
+}
+
 export function ProcessPaginationFooter({
-  savedLabel = "Guardado a las 14:36",
+  savedAt = null,
   backLabel = "Atras",
   nextLabel = "Continuar",
   onBack,
@@ -41,10 +47,12 @@ export function ProcessPaginationFooter({
       </Button>
 
       <div className="flex items-center gap-3 sm:ml-auto">
-        <p className="inline-flex items-center text-sm text-[#66708a]">
-          <span className="mr-1.5 h-2 w-2 rounded-full bg-[#34c28c]" />
-          {savedLabel}
-        </p>
+        {savedAt && (
+          <p className="inline-flex items-center text-sm text-[#66708a]">
+            <span className="mr-1.5 h-2 w-2 rounded-full bg-[#34c28c]" />
+            {formatSavedAt(savedAt)}
+          </p>
+        )}
 
         <Button
           type="button"

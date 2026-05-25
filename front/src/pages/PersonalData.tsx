@@ -6,6 +6,7 @@ import { NorthpayHeader } from "@/components/layout/NorthpayHeader";
 import { ProcessPaginationFooter } from "@/components/layout/ProcessPaginationFooter";
 import { ProcessStatusBar } from "@/components/layout/ProcessStatusBar";
 import { StepsTrackingPanel } from "@/components/layout/StepsTrackingPanel";
+import { useApp } from "@/context/appContext";
 import { Input } from "@/components/ui/input";
 
 const TAX_REGIMES = ["Simple", "Común", "No declarante"] as const;
@@ -23,6 +24,7 @@ type CountryCode = (typeof COUNTRIES)[number]["code"];
 
 export default function PersonalData() {
   const navigate = useNavigate();
+  const { savedAt } = useApp();
   const [taxRegime, setTaxRegime] = useState<TaxRegime>("Simple");
   const [chargesIva, setChargesIva] = useState<boolean>(false);
   const [country, setCountry] = useState<CountryCode>("CO");
@@ -204,6 +206,7 @@ export default function PersonalData() {
 
             <ProcessPaginationFooter
               className="rounded-none border-0 border-t border-[#ddd4c8] px-6"
+              savedAt={savedAt}
               onBack={() => navigate(-1)}
               onNext={() => navigate("/documents")}
             />

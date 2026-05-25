@@ -30,7 +30,7 @@ interface Step1Body {
 }
 
 export function useStep1() {
-  const { session, updateStep, updateFullName } = useApp();
+  const { session, updateStep, updateFullName, updateSavedAt } = useApp();
 
   return useMutation({
     mutationFn: (body: Step1Body) => {
@@ -44,6 +44,7 @@ export function useStep1() {
     onSuccess: (data) => {
       updateStep(data.currentStep);
       if (data.fullName) updateFullName(data.fullName);
+      updateSavedAt(new Date(data.updatedAt));
     },
   });
 }
@@ -51,7 +52,7 @@ export function useStep1() {
 // ─── Step 2 — Documents ────────────────────────────────────────────────────
 
 export function useUploadDocuments() {
-  const { session, updateStep } = useApp();
+  const { session, updateStep, updateSavedAt } = useApp();
 
   return useMutation({
     mutationFn: ({ files, types }: { files: File[]; types: string[] }) => {
@@ -69,7 +70,11 @@ export function useUploadDocuments() {
         session.sessionToken
       );
     },
-    onSuccess: (data) => updateStep(data.currentStep),
+    onSuccess: (data) => {
+      updateStep(data.currentStep);
+      // DocumentsResponse no tiene updatedAt — usamos la hora local de confirmación
+      updateSavedAt(new Date());
+    },
   });
 }
 
@@ -82,7 +87,7 @@ export function useContractPreviewUrl() {
 }
 
 export function useSignContract() {
-  const { session, updateStep } = useApp();
+  const { session, updateStep, updateSavedAt } = useApp();
 
   return useMutation({
     mutationFn: () => {
@@ -93,7 +98,10 @@ export function useSignContract() {
         session.sessionToken
       );
     },
-    onSuccess: (data) => updateStep(data.currentStep),
+    onSuccess: (data) => {
+      updateStep(data.currentStep);
+      updateSavedAt(new Date(data.updatedAt));
+    },
   });
 }
 
@@ -105,7 +113,7 @@ interface PaymentBody {
 }
 
 export function useConfigurePayment() {
-  const { session, updateStep } = useApp();
+  const { session, updateStep, updateSavedAt } = useApp();
 
   return useMutation({
     mutationFn: (body: PaymentBody) => {
@@ -116,14 +124,17 @@ export function useConfigurePayment() {
         session.sessionToken
       );
     },
-    onSuccess: (data) => updateStep(data.currentStep),
+    onSuccess: (data) => {
+      updateStep(data.currentStep);
+      updateSavedAt(new Date(data.updatedAt));
+    },
   });
 }
 
 // ─── Step 5 — Selfie ───────────────────────────────────────────────────────
 
 export function useUploadSelfie() {
-  const { session, updateStep } = useApp();
+  const { session, updateStep, updateSavedAt } = useApp();
 
   return useMutation({
     mutationFn: (file: File) => {
@@ -138,7 +149,10 @@ export function useUploadSelfie() {
         session.sessionToken
       );
     },
-    onSuccess: (data) => updateStep(data.currentStep),
+    onSuccess: (data) => {
+      updateStep(data.currentStep);
+      updateSavedAt(new Date(data.updatedAt));
+    },
   });
 }
 
