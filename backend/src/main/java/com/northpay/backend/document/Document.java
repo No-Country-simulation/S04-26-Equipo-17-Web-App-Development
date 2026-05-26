@@ -36,6 +36,9 @@ public class Document {
     @Column(name = "file_url", nullable = false, columnDefinition = "text")
     private String fileUrl;
 
+    @Column(name = "storage_key", length = 255)
+    private String storageKey;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(nullable = false, columnDefinition = "onboarding_status")
