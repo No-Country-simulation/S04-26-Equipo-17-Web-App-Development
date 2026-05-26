@@ -154,4 +154,8 @@ public class DocumentService {
     public java.util.Optional<Document> findById(Long id) {
         return documentRepository.findById(id);
     }
+
+    public java.util.Optional<Document> findByOnboardingAndType(Long onboardingId, DocumentType type) {
+        return documentRepository.findByOnboardingIdAndDocType(onboardingId, type);
+    }
 }

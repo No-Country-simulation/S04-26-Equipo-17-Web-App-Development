@@ -4,6 +4,7 @@ import com.northpay.backend.common.dto.ApiResponseBackend;
 import com.northpay.backend.common.enums.DocumentType;
 import com.northpay.backend.common.exception.InvalidTokenException;
 import com.northpay.backend.document.Document;
+import com.northpay.backend.onboarding.dto.ContractDetailsResponse;
 import com.northpay.backend.onboarding.dto.ContractSignResponse;
 import com.northpay.backend.onboarding.dto.DocumentResponse;
 import com.northpay.backend.onboarding.dto.DocumentsUploadResponse;
@@ -167,6 +168,27 @@ public class OnboardingController {
                 result.onboarding().getCurrentStep(),
                 result.documentUrl());
         return ResponseEntity.ok(ApiResponseBackend.ok("Contrato firmado", payload));
+    }
+
+    @GetMapping("/{id}/contract-details")
+    @Operation(summary = "Términos económicos del contrato",
+            description = "Devuelve los datos económicos que aparecen en el PDF del contrato: "
+                    + "monto mensual, moneda, plazo y fechas (celebración e inicio). "
+                    + "Si el contrato ya fue firmado, las fechas reflejan el momento de la firma; "
+                    + "de lo contrario son una previsualización basada en la fecha actual.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Detalles del contrato"),
+            @ApiResponse(responseCode = "401", description = "Token de invitación inválido"),
+            @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<ContractDetailsResponse>> contractDetails(
+            @PathVariable Long id,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        String token = extractBearer(authHeader);
+        ContractDetailsResponse payload = onboardingService.getContractDetails(id, token);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Detalles del contrato", payload));
     }
 
     @PostMapping("/{id}/step4/payment")

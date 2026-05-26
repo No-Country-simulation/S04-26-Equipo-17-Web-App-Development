@@ -10,6 +10,8 @@ import com.northpay.backend.document.Document;
 import com.northpay.backend.document.DocumentService;
 import com.northpay.backend.invitation.Contractor;
 import com.northpay.backend.invitation.ContractorRepository;
+import com.northpay.backend.onboarding.contract.ContractTerms;
+import com.northpay.backend.onboarding.dto.ContractDetailsResponse;
 import com.northpay.backend.onboarding.dto.Step1Request;
 import com.northpay.backend.onboarding.dto.Step4PaymentRequest;
 import com.northpay.backend.onboarding.dto.CorrectionCommentResponse;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -129,7 +132,8 @@ public class OnboardingService {
         Onboarding onboarding = authorize(id, bearerToken);
         requireStatus(onboarding, OnboardingStatus.DOCUMENTS_UPLOADED);
 
-        byte[] pdf = contractPdfService.generate(onboarding);
+        LocalDate celebrationDate = LocalDate.now();
+        byte[] pdf = contractPdfService.generate(onboarding, celebrationDate);
         Document doc = documentService.storeOrReplaceGenerated(
                 onboarding,
                 DocumentType.SIGNED_CONTRACT,
@@ -139,6 +143,30 @@ public class OnboardingService {
 
         Onboarding updated = stateMachineService.transition(id, OnboardingAction.SIGN_CONTRACT);
         return new ContractSignResult(updated, doc.getFileUrl());
+    }
+
+    /**
+     * Devuelve los términos económicos del contrato (monto, moneda, plazo,
+     * fechas, empresa) que también aparecen en el PDF. Si el contrato ya fue
+     * firmado, la fecha de celebración es el {@code uploaded_at} del Document
+     * SIGNED_CONTRACT; de lo contrario es la fecha actual (preview).
+     */
+    @Transactional(readOnly = true)
+    public ContractDetailsResponse getContractDetails(Long id, String bearerToken) {
+        authorize(id, bearerToken);
+        var signedDoc = documentService.findByOnboardingAndType(id, DocumentType.SIGNED_CONTRACT);
+        LocalDate celebrationDate = signedDoc
+                .map(d -> d.getUploadedAt().toLocalDate())
+                .orElse(LocalDate.now());
+        return new ContractDetailsResponse(
+                ContractTerms.MONTHLY_AMOUNT,
+                ContractTerms.CURRENCY_PRIMARY,
+                ContractTerms.CURRENCY_ALTERNATE,
+                ContractTerms.DURATION_MONTHS,
+                celebrationDate,
+                celebrationDate.plusDays(ContractTerms.DAYS_UNTIL_START),
+                ContractTerms.COMPANY_NAME,
+                signedDoc.isPresent());
     }
 
     /**
