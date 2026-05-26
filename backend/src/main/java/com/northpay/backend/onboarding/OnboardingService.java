@@ -65,8 +65,17 @@ public class OnboardingService {
         requireStatus(onboarding, OnboardingStatus.IN_PROGRESS);
 
         Contractor contractor = onboarding.getContractor();
-        contractor.setFullName(request.fullName());
+        contractor.setFirstName(request.firstName().trim());
+        contractor.setLastName(request.lastName().trim());
+        contractor.setPreferredName(
+                request.preferredName() == null ? null : request.preferredName().trim());
+        contractor.setBirthDate(request.birthDate());
         contractor.setCountryIso(request.countryIso().toUpperCase());
+        contractor.setIdDocumentNumber(request.idDocumentNumber().trim());
+        contractor.setTaxRegime(request.taxRegime().trim());
+        contractor.setPhone(request.phone().trim());
+        // full_name se mantiene autocompuesto para no romper ContractPdfService.
+        contractor.setFullName(contractor.getFirstName() + " " + contractor.getLastName());
         contractorRepository.save(contractor);
 
         onboarding.setCurrentStep(2);
@@ -161,6 +170,16 @@ public class OnboardingService {
         documentService.store(onboarding, DocumentType.SELFIE, file);
 
         return stateMachineService.transition(id, OnboardingAction.SUBMIT_SELFIE);
+    }
+
+    /**
+     * Estado y datos del contratista (incluye email pre-cargado de la invitación
+     * para que el frontend del Paso 1 lo muestre como read-only).
+     * No cambia estado.
+     */
+    @Transactional(readOnly = true)
+    public Onboarding getStatus(Long id, String bearerToken) {
+        return authorize(id, bearerToken);
     }
 
     /**

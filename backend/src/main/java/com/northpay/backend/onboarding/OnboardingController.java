@@ -66,8 +66,15 @@ public class OnboardingController {
                 updated.getId(),
                 updated.getStatus(),
                 updated.getCurrentStep(),
-                updated.getContractor().getFullName(),
+                updated.getContractor().getFirstName(),
+                updated.getContractor().getLastName(),
+                updated.getContractor().getPreferredName(),
+                updated.getContractor().getBirthDate(),
                 updated.getContractor().getCountryIso(),
+                updated.getContractor().getIdDocumentNumber(),
+                updated.getContractor().getTaxRegime(),
+                updated.getContractor().getPhone(),
+                updated.getContractor().getEmail(),
                 updated.getUpdatedAt());
         return ResponseEntity.ok(ApiResponseBackend.ok("Paso 1 guardado", payload));
     }
@@ -208,6 +215,28 @@ public class OnboardingController {
                 toStatusResponse(updated)));
     }
 
+    @GetMapping("/{id}/status")
+    @Operation(summary = "Estado y datos del contratista",
+            description = "Devuelve el estado actual del onboarding, el paso vigente y los datos "
+                    + "personales ya guardados del contratista (incluido el email pre-cargado de la "
+                    + "invitación). El frontend del Paso 1 usa este endpoint para mostrar el email "
+                    + "como read-only y rellenar los campos al volver a entrar.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Estado del onboarding"),
+            @ApiResponse(responseCode = "401", description = "Token de invitación inválido"),
+            @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<OnboardingStatusResponse>> getStatus(
+            @PathVariable Long id,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        String token = extractBearer(authHeader);
+        Onboarding onboarding = onboardingService.getStatus(id, token);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Estado del onboarding",
+                toStatusResponse(onboarding)));
+    }
+
     @GetMapping("/{id}/comments")
     @Operation(summary = "HU-09: comentarios de corrección",
             description = "Devuelve las entradas de event_history con "
@@ -228,8 +257,21 @@ public class OnboardingController {
     }
 
     private OnboardingStatusResponse toStatusResponse(Onboarding o) {
+        var c = o.getContractor();
         return new OnboardingStatusResponse(
-                o.getId(), o.getStatus(), o.getCurrentStep(), o.getUpdatedAt());
+                o.getId(),
+                o.getStatus(),
+                o.getCurrentStep(),
+                c.getFirstName(),
+                c.getLastName(),
+                c.getPreferredName(),
+                c.getBirthDate(),
+                c.getCountryIso(),
+                c.getIdDocumentNumber(),
+                c.getTaxRegime(),
+                c.getPhone(),
+                c.getEmail(),
+                o.getUpdatedAt());
     }
 
     private DocumentResponse toDocumentResponse(Document d) {
