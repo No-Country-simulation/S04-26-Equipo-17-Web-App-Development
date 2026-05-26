@@ -45,6 +45,7 @@ public class DocumentService {
                 .onboarding(onboarding)
                 .docType(type)
                 .fileUrl(fileUrl)
+                .storageKey(key)
                 .status(OnboardingStatus.IN_PROGRESS)
                 .build();
         return documentRepository.save(doc);
@@ -74,6 +75,7 @@ public class DocumentService {
                 .onboarding(onboarding)
                 .docType(type)
                 .fileUrl(fileUrl)
+                .storageKey(key)
                 .status(OnboardingStatus.IN_PROGRESS)
                 .build();
         return documentRepository.save(doc);
@@ -82,6 +84,7 @@ public class DocumentService {
     /**
      * Como {@link #storeGenerated}, pero si ya existe un documento de ese tipo
      * para el onboarding, reemplaza su URL en lugar de insertar otra fila.
+     * Borra el archivo previo del bucket para no dejar huérfanos.
      */
     @Transactional
     public Document storeOrReplaceGenerated(Onboarding onboarding,
@@ -91,15 +94,47 @@ public class DocumentService {
                                             String contentType) {
         return documentRepository.findByOnboardingIdAndDocType(onboarding.getId(), type)
                 .map(existing -> {
-                    String key = buildKey(onboarding, type, filename);
-                    String url = storageClient.upload(bytes, key,
+                    String newKey = buildKey(onboarding, type, filename);
+                    String url = storageClient.upload(bytes, newKey,
                             contentType != null ? contentType : "application/octet-stream");
+
+                    String previousKey = existing.getStorageKey();
+                    if (previousKey != null && !previousKey.isBlank() && !previousKey.equals(newKey)) {
+                        try {
+                            storageClient.delete(previousKey);
+                        } catch (RuntimeException ex) {
+                            log.warn("No se pudo borrar la versión previa del bucket: onboarding={} type={} key={}",
+                                    onboarding.getId(), type, previousKey, ex);
+                        }
+                    }
+
                     existing.setFileUrl(url);
+                    existing.setStorageKey(newKey);
                     log.info("Documento {} reemplazado: onboarding={} type={}",
                             existing.getId(), onboarding.getId(), type);
                     return documentRepository.save(existing);
                 })
                 .orElseGet(() -> storeGenerated(onboarding, type, bytes, filename, contentType));
+    }
+
+    /**
+     * Borra el documento del bucket y de la BD. Si la fila no tiene storage_key
+     * (migrada desde antes de V5), solo borra la fila.
+     */
+    @Transactional
+    public void delete(Document doc) {
+        String key = doc.getStorageKey();
+        if (key != null && !key.isBlank()) {
+            try {
+                storageClient.delete(key);
+            } catch (RuntimeException ex) {
+                log.warn("No se pudo borrar el objeto del bucket (continuamos con la fila DB): documentId={} key={}",
+                        doc.getId(), key, ex);
+            }
+        } else {
+            log.warn("Documento {} sin storage_key; se borra solo la fila DB", doc.getId());
+        }
+        documentRepository.delete(doc);
     }
 
     private String buildKey(Onboarding onboarding, DocumentType type, String filename) {
@@ -114,5 +149,9 @@ public class DocumentService {
 
     public List<Document> findByOnboarding(Long onboardingId) {
         return documentRepository.findByOnboardingId(onboardingId);
+    }
+
+    public java.util.Optional<Document> findById(Long id) {
+        return documentRepository.findById(id);
     }
 }

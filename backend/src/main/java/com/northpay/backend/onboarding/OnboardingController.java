@@ -237,6 +237,74 @@ public class OnboardingController {
                 toStatusResponse(onboarding)));
     }
 
+    @GetMapping("/{id}/documents")
+    @Operation(summary = "Listar documentos del onboarding",
+            description = "Devuelve los documentos subidos en el Paso 2 (o generados como SIGNED_CONTRACT/SELFIE). "
+                    + "Acepta el query param 'type' opcional para filtrar por DocumentType.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de documentos"),
+            @ApiResponse(responseCode = "401", description = "Token de invitación inválido"),
+            @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<List<DocumentResponse>>> listDocuments(
+            @PathVariable Long id,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam(value = "type", required = false) DocumentType type) {
+
+        String token = extractBearer(authHeader);
+        List<DocumentResponse> payload = onboardingService.listDocuments(id, token, type).stream()
+                .map(this::toDocumentResponse)
+                .toList();
+        return ResponseEntity.ok(ApiResponseBackend.ok("Documentos del onboarding", payload));
+    }
+
+    @GetMapping("/{id}/documents/{documentId}")
+    @Operation(summary = "Obtener un documento del onboarding",
+            description = "Devuelve la metadata (incluyendo file_url pública del bucket) de un documento "
+                    + "específico. El frontend puede usar el file_url para previsualizar el archivo.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Documento encontrado"),
+            @ApiResponse(responseCode = "401", description = "Token de invitación inválido"),
+            @ApiResponse(responseCode = "404", description = "Documento no encontrado"),
+            @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<DocumentResponse>> getDocument(
+            @PathVariable Long id,
+            @PathVariable Long documentId,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        String token = extractBearer(authHeader);
+        Document doc = onboardingService.getDocument(id, documentId, token);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Documento encontrado",
+                toDocumentResponse(doc)));
+    }
+
+    @DeleteMapping("/{id}/documents/{documentId}")
+    @Operation(summary = "Borrar un documento del onboarding",
+            description = "Elimina el archivo del bucket Supabase y la fila en BD. "
+                    + "Permitido en cualquier estado pre-verificación (IN_PROGRESS, DOCUMENTS_UPLOADED, "
+                    + "CONTRACT_SIGNED, PAYMENT_CONFIGURED, CORRECTION_REQUIRED). Para reemplazar un "
+                    + "documento, hacer DELETE seguido de POST /documents.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Documento borrado"),
+            @ApiResponse(responseCode = "401", description = "Token de invitación inválido"),
+            @ApiResponse(responseCode = "404", description = "Documento no encontrado"),
+            @ApiResponse(responseCode = "409", description = "Estado actual no permite borrar"),
+            @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<Void>> deleteDocument(
+            @PathVariable Long id,
+            @PathVariable Long documentId,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        String token = extractBearer(authHeader);
+        onboardingService.deleteDocument(id, documentId, token);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Documento borrado", null));
+    }
+
     @GetMapping("/{id}/comments")
     @Operation(summary = "HU-09: comentarios de corrección",
             description = "Devuelve las entradas de event_history con "

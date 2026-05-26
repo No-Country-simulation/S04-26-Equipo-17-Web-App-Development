@@ -183,6 +183,70 @@ public class OnboardingService {
     }
 
     /**
+     * HU-02: lista los documentos del onboarding. Si {@code type} es no-nulo,
+     * filtra por ese tipo. Usado por el frontend para verificar qué subió.
+     */
+    @Transactional(readOnly = true)
+    public List<Document> listDocuments(Long id, String bearerToken, DocumentType type) {
+        authorize(id, bearerToken);
+        List<Document> all = documentService.findByOnboarding(id);
+        if (type == null) {
+            return all;
+        }
+        return all.stream().filter(d -> d.getDocType() == type).toList();
+    }
+
+    /**
+     * HU-02: devuelve un documento puntual. Valida que pertenezca al onboarding
+     * del bearer (evita acceso cruzado entre invitaciones).
+     */
+    @Transactional(readOnly = true)
+    public Document getDocument(Long onboardingId, Long documentId, String bearerToken) {
+        authorize(onboardingId, bearerToken);
+        Document doc = documentService.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Documento %d no encontrado".formatted(documentId)));
+        if (!doc.getOnboarding().getId().equals(onboardingId)) {
+            // Tratamos como "no encontrado" para no filtrar la existencia de IDs ajenos.
+            throw new ResourceNotFoundException(
+                    "Documento %d no encontrado".formatted(documentId));
+        }
+        return doc;
+    }
+
+    /**
+     * HU-02: borra un documento del bucket y de la BD. Permitido en cualquier
+     * estado pre-verificación: IN_PROGRESS, DOCUMENTS_UPLOADED, CONTRACT_SIGNED,
+     * PAYMENT_CONFIGURED y CORRECTION_REQUIRED. Bloqueado en PENDING_VERIFICATION,
+     * ACTIVATED y REJECTED (el operador ya tomó decisiones sobre el documento).
+     */
+    @Transactional
+    public void deleteDocument(Long onboardingId, Long documentId, String bearerToken) {
+        Onboarding onboarding = authorize(onboardingId, bearerToken);
+        OnboardingStatus s = onboarding.getStatus();
+        if (s == OnboardingStatus.PENDING_VERIFICATION
+                || s == OnboardingStatus.ACTIVATED
+                || s == OnboardingStatus.REJECTED) {
+            throw new InvalidStateTransitionException(
+                    "No se puede borrar documentos en estado %s".formatted(s));
+        }
+
+        Document doc = documentService.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Documento %d no encontrado".formatted(documentId)));
+        if (!doc.getOnboarding().getId().equals(onboardingId)) {
+            throw new ResourceNotFoundException(
+                    "Documento %d no encontrado".formatted(documentId));
+        }
+
+        // TODO: cuando exista documents.needs_resign (HU correcciones),
+        // marcar el SIGNED_CONTRACT como needs_resign=true si se borra
+        // un documento de identidad con status >= CONTRACT_SIGNED.
+
+        documentService.delete(doc);
+    }
+
+    /**
      * HU-09: comentarios de corrección. Lee event_history con
      * event=CORRECTION_REQUESTED ordenado por fecha.
      */
