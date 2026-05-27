@@ -4,6 +4,7 @@ import com.northpay.backend.common.enums.DocumentType;
 import com.northpay.backend.common.enums.EventType;
 import com.northpay.backend.common.enums.OnboardingStatus;
 import com.northpay.backend.common.exception.InvalidStateTransitionException;
+import com.northpay.backend.common.exception.ResourceNotFoundException;
 import com.northpay.backend.document.Document;
 import com.northpay.backend.document.DocumentService;
 import com.northpay.backend.invitation.Contractor;
@@ -46,11 +47,12 @@ class OnboardingServiceTest {
     @Mock private ContractPdfService contractPdfService;
     @Mock private PaymentService paymentService;
     @Mock private EventHistoryRepository eventHistoryRepository;
+    @Mock private com.northpay.backend.onboarding.fx.FxService fxService;
 
     private OnboardingService service() {
         return new OnboardingService(onboardingRepository, contractorRepository,
                 stateMachineService, documentService, contractPdfService,
-                paymentService, eventHistoryRepository);
+                paymentService, eventHistoryRepository, fxService);
     }
 
     private Onboarding onboarding(OnboardingStatus status) {
@@ -176,6 +178,68 @@ class OnboardingServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(OnboardingStatus.PENDING_VERIFICATION);
         verify(documentService).store(ob, DocumentType.SELFIE, file);
+    }
+
+    // ---------- listDocuments / getDocument / deleteDocument ----------
+
+    @Test
+    void listDocumentsFiltrosPorTypeDevuelveSoloEseTipo() {
+        Onboarding ob = onboarding(OnboardingStatus.IN_PROGRESS);
+        when(onboardingRepository.findById(ID)).thenReturn(Optional.of(ob));
+        Document idDoc = Document.builder().id(10L).docType(DocumentType.IDENTITY).onboarding(ob).build();
+        Document selfie = Document.builder().id(11L).docType(DocumentType.SELFIE).onboarding(ob).build();
+        when(documentService.findByOnboarding(ID)).thenReturn(List.of(idDoc, selfie));
+
+        List<Document> result = service().listDocuments(ID, TOKEN, DocumentType.IDENTITY);
+
+        assertThat(result).extracting(Document::getId).containsExactly(10L);
+    }
+
+    @Test
+    void getDocumentDeOtroOnboardingLanzaNotFound() {
+        Onboarding ob = onboarding(OnboardingStatus.IN_PROGRESS);
+        Onboarding ajeno = Onboarding.builder().id(999L).build();
+        Document doc = Document.builder().id(50L).onboarding(ajeno).build();
+        when(onboardingRepository.findById(ID)).thenReturn(Optional.of(ob));
+        when(documentService.findById(50L)).thenReturn(Optional.of(doc));
+
+        assertThatThrownBy(() -> service().getDocument(ID, 50L, TOKEN))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void getDocumentHappyDevuelveElDocumento() {
+        Onboarding ob = onboarding(OnboardingStatus.DOCUMENTS_UPLOADED);
+        Document doc = Document.builder().id(50L).docType(DocumentType.IDENTITY).onboarding(ob).build();
+        when(onboardingRepository.findById(ID)).thenReturn(Optional.of(ob));
+        when(documentService.findById(50L)).thenReturn(Optional.of(doc));
+
+        Document result = service().getDocument(ID, 50L, TOKEN);
+
+        assertThat(result.getId()).isEqualTo(50L);
+    }
+
+    @Test
+    void deleteDocumentEnEstadoVerificacionLanza() {
+        Onboarding ob = onboarding(OnboardingStatus.PENDING_VERIFICATION);
+        when(onboardingRepository.findById(ID)).thenReturn(Optional.of(ob));
+
+        assertThatThrownBy(() -> service().deleteDocument(ID, 50L, TOKEN))
+                .isInstanceOf(InvalidStateTransitionException.class);
+
+        verify(documentService, never()).delete(any());
+    }
+
+    @Test
+    void deleteDocumentHappyBorraDeStorageYRepo() {
+        Onboarding ob = onboarding(OnboardingStatus.DOCUMENTS_UPLOADED);
+        Document doc = Document.builder().id(50L).docType(DocumentType.IDENTITY).onboarding(ob).build();
+        when(onboardingRepository.findById(ID)).thenReturn(Optional.of(ob));
+        when(documentService.findById(50L)).thenReturn(Optional.of(doc));
+
+        service().deleteDocument(ID, 50L, TOKEN);
+
+        verify(documentService).delete(doc);
     }
 
     // ---------- getCorrectionComments ----------

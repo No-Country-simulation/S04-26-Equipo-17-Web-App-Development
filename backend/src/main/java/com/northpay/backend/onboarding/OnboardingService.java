@@ -10,6 +10,9 @@ import com.northpay.backend.document.Document;
 import com.northpay.backend.document.DocumentService;
 import com.northpay.backend.invitation.Contractor;
 import com.northpay.backend.invitation.ContractorRepository;
+import com.northpay.backend.onboarding.contract.ContractTerms;
+import com.northpay.backend.onboarding.dto.ContractDetailsResponse;
+import com.northpay.backend.onboarding.fx.FxService;
 import com.northpay.backend.onboarding.dto.Step1Request;
 import com.northpay.backend.onboarding.dto.Step4PaymentRequest;
 import com.northpay.backend.onboarding.dto.CorrectionCommentResponse;
@@ -22,9 +25,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +44,7 @@ public class OnboardingService {
     private final ContractPdfService contractPdfService;
     private final PaymentService paymentService;
     private final EventHistoryRepository eventHistoryRepository;
+    private final FxService fxService;
 
     @Transactional
     public Onboarding openLink(String token) {
@@ -65,8 +72,17 @@ public class OnboardingService {
         requireStatus(onboarding, OnboardingStatus.IN_PROGRESS);
 
         Contractor contractor = onboarding.getContractor();
-        contractor.setFullName(request.fullName());
+        contractor.setFirstName(request.firstName().trim());
+        contractor.setLastName(request.lastName().trim());
+        contractor.setPreferredName(
+                request.preferredName() == null ? null : request.preferredName().trim());
+        contractor.setBirthDate(request.birthDate());
         contractor.setCountryIso(request.countryIso().toUpperCase());
+        contractor.setIdDocumentNumber(request.idDocumentNumber().trim());
+        contractor.setTaxRegime(request.taxRegime().trim());
+        contractor.setPhone(request.phone().trim());
+        // full_name se mantiene autocompuesto para no romper ContractPdfService.
+        contractor.setFullName(contractor.getFirstName() + " " + contractor.getLastName());
         contractorRepository.save(contractor);
 
         onboarding.setCurrentStep(2);
@@ -120,7 +136,8 @@ public class OnboardingService {
         Onboarding onboarding = authorize(id, bearerToken);
         requireStatus(onboarding, OnboardingStatus.DOCUMENTS_UPLOADED);
 
-        byte[] pdf = contractPdfService.generate(onboarding);
+        LocalDate celebrationDate = LocalDate.now();
+        byte[] pdf = contractPdfService.generate(onboarding, celebrationDate);
         Document doc = documentService.storeOrReplaceGenerated(
                 onboarding,
                 DocumentType.SIGNED_CONTRACT,
@@ -130,6 +147,42 @@ public class OnboardingService {
 
         Onboarding updated = stateMachineService.transition(id, OnboardingAction.SIGN_CONTRACT);
         return new ContractSignResult(updated, doc.getFileUrl());
+    }
+
+    /**
+     * Devuelve los términos económicos del contrato (monto, moneda, plazo,
+     * fechas, empresa) que también aparecen en el PDF. Si el contrato ya fue
+     * firmado, la fecha de celebración es el {@code uploaded_at} del Document
+     * SIGNED_CONTRACT; de lo contrario es la fecha actual (preview).
+     */
+    @Transactional(readOnly = true)
+    public ContractDetailsResponse getContractDetails(Long id, String bearerToken) {
+        authorize(id, bearerToken);
+        var signedDoc = documentService.findByOnboardingAndType(id, DocumentType.SIGNED_CONTRACT);
+        LocalDate celebrationDate = signedDoc
+                .map(d -> d.getUploadedAt().toLocalDate())
+                .orElse(LocalDate.now());
+
+        Map<String, BigDecimal> conversions;
+        try {
+            conversions = fxService.monthlyAmountConversions();
+        } catch (RuntimeException ex) {
+            // Tolerante: si el proveedor FX falla, el endpoint sigue
+            // respondiendo sin conversiones (frontend muestra "—").
+            log.warn("No se pudieron obtener conversiones FX: {}", ex.getMessage());
+            conversions = null;
+        }
+
+        return new ContractDetailsResponse(
+                ContractTerms.MONTHLY_AMOUNT,
+                ContractTerms.CURRENCY_PRIMARY,
+                ContractTerms.CURRENCY_ALTERNATE,
+                ContractTerms.DURATION_MONTHS,
+                celebrationDate,
+                celebrationDate.plusDays(ContractTerms.DAYS_UNTIL_START),
+                ContractTerms.COMPANY_NAME,
+                signedDoc.isPresent(),
+                conversions);
     }
 
     /**
@@ -161,6 +214,80 @@ public class OnboardingService {
         documentService.store(onboarding, DocumentType.SELFIE, file);
 
         return stateMachineService.transition(id, OnboardingAction.SUBMIT_SELFIE);
+    }
+
+    /**
+     * Estado y datos del contratista (incluye email pre-cargado de la invitación
+     * para que el frontend del Paso 1 lo muestre como read-only).
+     * No cambia estado.
+     */
+    @Transactional(readOnly = true)
+    public Onboarding getStatus(Long id, String bearerToken) {
+        return authorize(id, bearerToken);
+    }
+
+    /**
+     * HU-02: lista los documentos del onboarding. Si {@code type} es no-nulo,
+     * filtra por ese tipo. Usado por el frontend para verificar qué subió.
+     */
+    @Transactional(readOnly = true)
+    public List<Document> listDocuments(Long id, String bearerToken, DocumentType type) {
+        authorize(id, bearerToken);
+        List<Document> all = documentService.findByOnboarding(id);
+        if (type == null) {
+            return all;
+        }
+        return all.stream().filter(d -> d.getDocType() == type).toList();
+    }
+
+    /**
+     * HU-02: devuelve un documento puntual. Valida que pertenezca al onboarding
+     * del bearer (evita acceso cruzado entre invitaciones).
+     */
+    @Transactional(readOnly = true)
+    public Document getDocument(Long onboardingId, Long documentId, String bearerToken) {
+        authorize(onboardingId, bearerToken);
+        Document doc = documentService.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Documento %d no encontrado".formatted(documentId)));
+        if (!doc.getOnboarding().getId().equals(onboardingId)) {
+            // Tratamos como "no encontrado" para no filtrar la existencia de IDs ajenos.
+            throw new ResourceNotFoundException(
+                    "Documento %d no encontrado".formatted(documentId));
+        }
+        return doc;
+    }
+
+    /**
+     * HU-02: borra un documento del bucket y de la BD. Permitido en cualquier
+     * estado pre-verificación: IN_PROGRESS, DOCUMENTS_UPLOADED, CONTRACT_SIGNED,
+     * PAYMENT_CONFIGURED y CORRECTION_REQUIRED. Bloqueado en PENDING_VERIFICATION,
+     * ACTIVATED y REJECTED (el operador ya tomó decisiones sobre el documento).
+     */
+    @Transactional
+    public void deleteDocument(Long onboardingId, Long documentId, String bearerToken) {
+        Onboarding onboarding = authorize(onboardingId, bearerToken);
+        OnboardingStatus s = onboarding.getStatus();
+        if (s == OnboardingStatus.PENDING_VERIFICATION
+                || s == OnboardingStatus.ACTIVATED
+                || s == OnboardingStatus.REJECTED) {
+            throw new InvalidStateTransitionException(
+                    "No se puede borrar documentos en estado %s".formatted(s));
+        }
+
+        Document doc = documentService.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Documento %d no encontrado".formatted(documentId)));
+        if (!doc.getOnboarding().getId().equals(onboardingId)) {
+            throw new ResourceNotFoundException(
+                    "Documento %d no encontrado".formatted(documentId));
+        }
+
+        // TODO: cuando exista documents.needs_resign (HU correcciones),
+        // marcar el SIGNED_CONTRACT como needs_resign=true si se borra
+        // un documento de identidad con status >= CONTRACT_SIGNED.
+
+        documentService.delete(doc);
     }
 
     /**

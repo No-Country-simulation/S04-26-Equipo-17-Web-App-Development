@@ -4,6 +4,7 @@ import com.northpay.backend.common.dto.ApiResponseBackend;
 import com.northpay.backend.common.enums.DocumentType;
 import com.northpay.backend.common.exception.InvalidTokenException;
 import com.northpay.backend.document.Document;
+import com.northpay.backend.onboarding.dto.ContractDetailsResponse;
 import com.northpay.backend.onboarding.dto.ContractSignResponse;
 import com.northpay.backend.onboarding.dto.DocumentResponse;
 import com.northpay.backend.onboarding.dto.DocumentsUploadResponse;
@@ -66,8 +67,15 @@ public class OnboardingController {
                 updated.getId(),
                 updated.getStatus(),
                 updated.getCurrentStep(),
-                updated.getContractor().getFullName(),
+                updated.getContractor().getFirstName(),
+                updated.getContractor().getLastName(),
+                updated.getContractor().getPreferredName(),
+                updated.getContractor().getBirthDate(),
                 updated.getContractor().getCountryIso(),
+                updated.getContractor().getIdDocumentNumber(),
+                updated.getContractor().getTaxRegime(),
+                updated.getContractor().getPhone(),
+                updated.getContractor().getEmail(),
                 updated.getUpdatedAt());
         return ResponseEntity.ok(ApiResponseBackend.ok("Paso 1 guardado", payload));
     }
@@ -162,6 +170,27 @@ public class OnboardingController {
         return ResponseEntity.ok(ApiResponseBackend.ok("Contrato firmado", payload));
     }
 
+    @GetMapping("/{id}/contract-details")
+    @Operation(summary = "Términos económicos del contrato",
+            description = "Devuelve los datos económicos que aparecen en el PDF del contrato: "
+                    + "monto mensual, moneda, plazo y fechas (celebración e inicio). "
+                    + "Si el contrato ya fue firmado, las fechas reflejan el momento de la firma; "
+                    + "de lo contrario son una previsualización basada en la fecha actual.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Detalles del contrato"),
+            @ApiResponse(responseCode = "401", description = "Token de invitación inválido"),
+            @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<ContractDetailsResponse>> contractDetails(
+            @PathVariable Long id,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        String token = extractBearer(authHeader);
+        ContractDetailsResponse payload = onboardingService.getContractDetails(id, token);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Detalles del contrato", payload));
+    }
+
     @PostMapping("/{id}/step4/payment")
     @Operation(summary = "Paso 4: configurar método de pago",
             description = "Guarda el método de pago (JSONB) y transiciona a "
@@ -208,6 +237,96 @@ public class OnboardingController {
                 toStatusResponse(updated)));
     }
 
+    @GetMapping("/{id}/status")
+    @Operation(summary = "Estado y datos del contratista",
+            description = "Devuelve el estado actual del onboarding, el paso vigente y los datos "
+                    + "personales ya guardados del contratista (incluido el email pre-cargado de la "
+                    + "invitación). El frontend del Paso 1 usa este endpoint para mostrar el email "
+                    + "como read-only y rellenar los campos al volver a entrar.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Estado del onboarding"),
+            @ApiResponse(responseCode = "401", description = "Token de invitación inválido"),
+            @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<OnboardingStatusResponse>> getStatus(
+            @PathVariable Long id,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        String token = extractBearer(authHeader);
+        Onboarding onboarding = onboardingService.getStatus(id, token);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Estado del onboarding",
+                toStatusResponse(onboarding)));
+    }
+
+    @GetMapping("/{id}/documents")
+    @Operation(summary = "Listar documentos del onboarding",
+            description = "Devuelve los documentos subidos en el Paso 2 (o generados como SIGNED_CONTRACT/SELFIE). "
+                    + "Acepta el query param 'type' opcional para filtrar por DocumentType.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de documentos"),
+            @ApiResponse(responseCode = "401", description = "Token de invitación inválido"),
+            @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<List<DocumentResponse>>> listDocuments(
+            @PathVariable Long id,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam(value = "type", required = false) DocumentType type) {
+
+        String token = extractBearer(authHeader);
+        List<DocumentResponse> payload = onboardingService.listDocuments(id, token, type).stream()
+                .map(this::toDocumentResponse)
+                .toList();
+        return ResponseEntity.ok(ApiResponseBackend.ok("Documentos del onboarding", payload));
+    }
+
+    @GetMapping("/{id}/documents/{documentId}")
+    @Operation(summary = "Obtener un documento del onboarding",
+            description = "Devuelve la metadata (incluyendo file_url pública del bucket) de un documento "
+                    + "específico. El frontend puede usar el file_url para previsualizar el archivo.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Documento encontrado"),
+            @ApiResponse(responseCode = "401", description = "Token de invitación inválido"),
+            @ApiResponse(responseCode = "404", description = "Documento no encontrado"),
+            @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<DocumentResponse>> getDocument(
+            @PathVariable Long id,
+            @PathVariable Long documentId,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        String token = extractBearer(authHeader);
+        Document doc = onboardingService.getDocument(id, documentId, token);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Documento encontrado",
+                toDocumentResponse(doc)));
+    }
+
+    @DeleteMapping("/{id}/documents/{documentId}")
+    @Operation(summary = "Borrar un documento del onboarding",
+            description = "Elimina el archivo del bucket Supabase y la fila en BD. "
+                    + "Permitido en cualquier estado pre-verificación (IN_PROGRESS, DOCUMENTS_UPLOADED, "
+                    + "CONTRACT_SIGNED, PAYMENT_CONFIGURED, CORRECTION_REQUIRED). Para reemplazar un "
+                    + "documento, hacer DELETE seguido de POST /documents.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Documento borrado"),
+            @ApiResponse(responseCode = "401", description = "Token de invitación inválido"),
+            @ApiResponse(responseCode = "404", description = "Documento no encontrado"),
+            @ApiResponse(responseCode = "409", description = "Estado actual no permite borrar"),
+            @ApiResponse(responseCode = "410", description = "Token de invitación expirado")
+    })
+    public ResponseEntity<ApiResponseBackend<Void>> deleteDocument(
+            @PathVariable Long id,
+            @PathVariable Long documentId,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        String token = extractBearer(authHeader);
+        onboardingService.deleteDocument(id, documentId, token);
+        return ResponseEntity.ok(ApiResponseBackend.ok("Documento borrado", null));
+    }
+
     @GetMapping("/{id}/comments")
     @Operation(summary = "HU-09: comentarios de corrección",
             description = "Devuelve las entradas de event_history con "
@@ -228,8 +347,21 @@ public class OnboardingController {
     }
 
     private OnboardingStatusResponse toStatusResponse(Onboarding o) {
+        var c = o.getContractor();
         return new OnboardingStatusResponse(
-                o.getId(), o.getStatus(), o.getCurrentStep(), o.getUpdatedAt());
+                o.getId(),
+                o.getStatus(),
+                o.getCurrentStep(),
+                c.getFirstName(),
+                c.getLastName(),
+                c.getPreferredName(),
+                c.getBirthDate(),
+                c.getCountryIso(),
+                c.getIdDocumentNumber(),
+                c.getTaxRegime(),
+                c.getPhone(),
+                c.getEmail(),
+                o.getUpdatedAt());
     }
 
     private DocumentResponse toDocumentResponse(Document d) {
