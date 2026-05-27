@@ -12,6 +12,7 @@ import com.northpay.backend.invitation.Contractor;
 import com.northpay.backend.invitation.ContractorRepository;
 import com.northpay.backend.onboarding.contract.ContractTerms;
 import com.northpay.backend.onboarding.dto.ContractDetailsResponse;
+import com.northpay.backend.onboarding.fx.FxService;
 import com.northpay.backend.onboarding.dto.Step1Request;
 import com.northpay.backend.onboarding.dto.Step4PaymentRequest;
 import com.northpay.backend.onboarding.dto.CorrectionCommentResponse;
@@ -24,10 +25,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +44,7 @@ public class OnboardingService {
     private final ContractPdfService contractPdfService;
     private final PaymentService paymentService;
     private final EventHistoryRepository eventHistoryRepository;
+    private final FxService fxService;
 
     @Transactional
     public Onboarding openLink(String token) {
@@ -158,6 +162,17 @@ public class OnboardingService {
         LocalDate celebrationDate = signedDoc
                 .map(d -> d.getUploadedAt().toLocalDate())
                 .orElse(LocalDate.now());
+
+        Map<String, BigDecimal> conversions;
+        try {
+            conversions = fxService.monthlyAmountConversions();
+        } catch (RuntimeException ex) {
+            // Tolerante: si el proveedor FX falla, el endpoint sigue
+            // respondiendo sin conversiones (frontend muestra "—").
+            log.warn("No se pudieron obtener conversiones FX: {}", ex.getMessage());
+            conversions = null;
+        }
+
         return new ContractDetailsResponse(
                 ContractTerms.MONTHLY_AMOUNT,
                 ContractTerms.CURRENCY_PRIMARY,
@@ -166,7 +181,8 @@ public class OnboardingService {
                 celebrationDate,
                 celebrationDate.plusDays(ContractTerms.DAYS_UNTIL_START),
                 ContractTerms.COMPANY_NAME,
-                signedDoc.isPresent());
+                signedDoc.isPresent(),
+                conversions);
     }
 
     /**

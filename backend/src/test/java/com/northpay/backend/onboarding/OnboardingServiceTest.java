@@ -47,11 +47,12 @@ class OnboardingServiceTest {
     @Mock private ContractPdfService contractPdfService;
     @Mock private PaymentService paymentService;
     @Mock private EventHistoryRepository eventHistoryRepository;
+    @Mock private com.northpay.backend.onboarding.fx.FxService fxService;
 
     private OnboardingService service() {
         return new OnboardingService(onboardingRepository, contractorRepository,
                 stateMachineService, documentService, contractPdfService,
-                paymentService, eventHistoryRepository);
+                paymentService, eventHistoryRepository, fxService);
     }
 
     private Onboarding onboarding(OnboardingStatus status) {
