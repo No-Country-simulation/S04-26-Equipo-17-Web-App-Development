@@ -7,6 +7,7 @@ import IdentityVerify from "./pages/IdentityVerify.tsx";
 import OnBoarding from "./pages/OnBoarding.tsx";
 import Payment from "./pages/Payment.tsx";
 import PersonalData from "./pages/PersonalData.tsx";
+import Review from "./pages/Review.tsx";
 import Sign from "./pages/Sign.tsx";
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/sign" element={<Sign />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/identityVerify" element={<IdentityVerify />} />
+          <Route path="/review" element={<Review />} />
           <Route path="/wizard" element={<WizardProgress />} />
         </Route>
 

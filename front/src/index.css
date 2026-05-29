@@ -123,7 +123,7 @@
     --step-error: var(--destructive);
 }
 
-::root {
+:root {
     /* BASE */
     --background: #FFF8F0; /* Crema */
     --foreground: #1A1F2C; /* Ink 100 */

@@ -7,6 +7,7 @@ import { ProcessPaginationFooter } from "@/components/layout/ProcessPaginationFo
 import { ProcessStatusBar } from "@/components/layout/ProcessStatusBar";
 import { StepsTrackingPanel } from "@/components/layout/StepsTrackingPanel";
 import { useApp } from "@/context/appContext";
+import { ApiError } from "@/lib/api";
 import { useUploadDocuments } from "@/lib/queries";
 
 type DocType = "IDENTITY" | "PROOF_OF_ADDRESS" | "TAX_ID";
@@ -52,7 +53,7 @@ function getInitials(name: string) {
 
 export default function Documents() {
   const navigate = useNavigate();
-  const { session, savedAt } = useApp();
+  const { session, savedAt, clearSession } = useApp();
   const uploadMutation = useUploadDocuments();
 
   // Archivos seleccionados localmente — aún no subidos
@@ -85,6 +86,11 @@ export default function Documents() {
       {
         onSuccess: () => navigate("/sign"),
         onError: (err) => {
+          if (err instanceof ApiError && err.status === 401) {
+            clearSession();
+            navigate("/");
+            return;
+          }
           const message = err instanceof Error ? err.message : "Error al subir los documentos";
           setUploadError(message);
         },

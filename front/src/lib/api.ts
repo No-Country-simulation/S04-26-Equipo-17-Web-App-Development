@@ -60,7 +60,9 @@ async function requestForm<T>(path: string, formData: FormData, token: string): 
   }
 
   const text = await res.text();
-  return text ? (JSON.parse(text) as T) : (null as T);
+  if (!text) return null as T;
+  const json = JSON.parse(text);
+  return "data" in json ? (json as ApiResponse<T>).data : (json as T);
 }
 
 export const api = {
