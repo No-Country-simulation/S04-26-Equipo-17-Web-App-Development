@@ -5,6 +5,7 @@ import { useApp } from "@/context/appContext";
 import { api } from "./api";
 import type {
   CorrectionComment,
+  Document,
   DocumentsResponse,
   InvitationResponse,
   Step1Response,
@@ -25,8 +26,14 @@ export function useInvitation(token: string) {
 // ─── Step 1 — Personal data ────────────────────────────────────────────────
 
 interface Step1Body {
-  fullName: string;
+  firstName: string;
+  lastName: string;
+  preferredName?: string;
+  birthDate: string; // yyyy-MM-dd
   countryIso: string;
+  idDocumentNumber: string;
+  taxRegime: string;
+  phone: string;
 }
 
 export function useStep1() {
@@ -43,7 +50,7 @@ export function useStep1() {
     },
     onSuccess: (data) => {
       updateStep(data.currentStep);
-      if (data.fullName) updateFullName(data.fullName);
+      updateFullName(`${data.firstName} ${data.lastName}`);
       updateSavedAt(new Date(data.updatedAt));
     },
   });
@@ -153,6 +160,21 @@ export function useUploadSelfie() {
       updateStep(data.currentStep);
       updateSavedAt(new Date(data.updatedAt));
     },
+  });
+}
+
+// ─── Documents list ────────────────────────────────────────────────────────
+
+export function useDocuments(docType?: string) {
+  const { session } = useApp();
+  const path = docType
+    ? `/api/onboarding/${session?.onboardingId}/documents?type=${docType}`
+    : `/api/onboarding/${session?.onboardingId}/documents`;
+
+  return useQuery({
+    queryKey: ["documents", session?.onboardingId, docType],
+    queryFn: () => api.get<Document[]>(path, session!.sessionToken),
+    enabled: !!session,
   });
 }
 

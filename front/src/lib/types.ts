@@ -38,8 +38,15 @@ export interface Step1Response {
   onboardingId: number;
   status: OnboardingStatus;
   currentStep: number;
-  fullName: string;
+  firstName: string;
+  lastName: string;
+  preferredName?: string;
+  birthDate: string;
   countryIso: string;
+  idDocumentNumber: string;
+  taxRegime: string;
+  phone: string;
+  email?: string;
   updatedAt: string;
 }
 

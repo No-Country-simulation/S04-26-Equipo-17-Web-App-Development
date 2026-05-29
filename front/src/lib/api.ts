@@ -65,6 +65,17 @@ async function requestForm<T>(path: string, formData: FormData, token: string): 
   return "data" in json ? (json as ApiResponse<T>).data : (json as T);
 }
 
+async function requestBlob(path: string, token: string): Promise<Blob> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => null);
+    throw new ApiError(res.status, errorBody?.message ?? `Error ${res.status}`);
+  }
+  return res.blob();
+}
+
 export const api = {
   get: <T>(path: string, token?: string) => request<T>(path, { token }),
   post: <T>(path: string, body: unknown, token: string) =>
@@ -73,4 +84,5 @@ export const api = {
     request<T>(path, { method: "PUT", body, token }),
   postForm: <T>(path: string, formData: FormData, token: string) =>
     requestForm<T>(path, formData, token),
+  blob: (path: string, token: string) => requestBlob(path, token),
 };

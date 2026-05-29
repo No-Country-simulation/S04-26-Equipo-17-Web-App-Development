@@ -18,6 +18,7 @@ import { ProcessPaginationFooter } from "@/components/layout/ProcessPaginationFo
 import { ProcessStatusBar } from "@/components/layout/ProcessStatusBar";
 import { StepsTrackingPanel } from "@/components/layout/StepsTrackingPanel";
 import { useApp } from "@/context/appContext";
+import { ApiError } from "@/lib/api";
 import { useUploadSelfie } from "@/lib/queries";
 
 // ─── Comprobaciones ────────────────────────────────────────────────────────
@@ -82,7 +83,7 @@ type CameraState = "idle" | "active" | "captured" | "error";
 
 export default function IdentityVerify() {
   const navigate = useNavigate();
-  const { session, savedAt } = useApp();
+  const { session, savedAt, clearSession } = useApp();
   const selfieMutation = useUploadSelfie();
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -167,6 +168,11 @@ export default function IdentityVerify() {
     selfieMutation.mutate(capturedFile, {
       onSuccess: () => navigate("/review"),
       onError: (err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          clearSession();
+          navigate("/");
+          return;
+        }
         setSubmitError(err instanceof Error ? err.message : "No pudimos enviar tu verificación");
       },
     });

@@ -8,6 +8,8 @@ import { ProcessStatusBar } from "@/components/layout/ProcessStatusBar";
 import { StepsTrackingPanel } from "@/components/layout/StepsTrackingPanel";
 import { useApp } from "@/context/appContext";
 import { Input } from "@/components/ui/input";
+import { ApiError } from "@/lib/api";
+import { useStep1 } from "@/lib/queries";
 
 const TAX_REGIMES = ["Simple", "Común", "No declarante"] as const;
 type TaxRegime = (typeof TAX_REGIMES)[number];
@@ -24,12 +26,49 @@ type CountryCode = (typeof COUNTRIES)[number]["code"];
 
 export default function PersonalData() {
   const navigate = useNavigate();
-  const { savedAt } = useApp();
-  const [taxRegime, setTaxRegime] = useState<TaxRegime>("Simple");
-  const [chargesIva, setChargesIva] = useState<boolean>(false);
+  const { savedAt, clearSession } = useApp();
+  const step1 = useStep1();
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [preferredName, setPreferredName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [country, setCountry] = useState<CountryCode>("CO");
+  const [idDocumentNumber, setIdDocumentNumber] = useState("");
+  const [taxRegime, setTaxRegime] = useState<TaxRegime>("Simple");
+  const [phone, setPhone] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const selectedCountry = COUNTRIES.find((c) => c.code === country)!;
+
+  const handleNext = () => {
+    setSubmitError(null);
+    step1.mutate(
+      {
+        firstName,
+        lastName,
+        preferredName: preferredName || undefined,
+        birthDate,
+        countryIso: country,
+        idDocumentNumber,
+        taxRegime,
+        phone,
+      },
+      {
+        onSuccess: () => navigate("/documents"),
+        onError: (err) => {
+          if (err instanceof ApiError && err.status === 401) {
+            clearSession();
+            navigate("/");
+            return;
+          }
+          setSubmitError(err instanceof Error ? err.message : "Error al guardar los datos");
+        },
+      },
+    );
+  };
+
+  const isReady = !!firstName && !!lastName && !!birthDate && !!idDocumentNumber && !!phone;
 
   return (
     <main className="min-h-dvh bg-[#efe9e1]">
@@ -47,7 +86,6 @@ export default function PersonalData() {
 
             <section className="relative mt-4 flex-1 overflow-y-auto px-6 pb-6">
               <article>
-                {/* Heading */}
                 <div className="flex items-start gap-4">
                   <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f6dbd1] text-[#c97158]">
                     <User className="h-5 w-5" />
@@ -71,6 +109,8 @@ export default function PersonalData() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FieldGroup label="Nombre legal">
                       <Input
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
                         placeholder="Tu nombre legal"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base"
                       />
@@ -78,21 +118,27 @@ export default function PersonalData() {
 
                     <FieldGroup label="Apellidos">
                       <Input
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
                         placeholder="Tus apellidos"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base"
                       />
                     </FieldGroup>
 
-                    <FieldGroup label="Cómo te llamamos" hint="Tu preferido">
+                    <FieldGroup label="Cómo te llamamos" hint="Opcional">
                       <Input
+                        value={preferredName}
+                        onChange={(e) => setPreferredName(e.target.value)}
                         placeholder="¿Cómo te gusta que te llamen?"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base"
                       />
                     </FieldGroup>
 
-                    <FieldGroup label="Fecha de nacimiento" hint="DD/MM/AAAA">
+                    <FieldGroup label="Fecha de nacimiento">
                       <Input
-                        placeholder="DD / MM / AAAA"
+                        type="date"
+                        value={birthDate}
+                        onChange={(e) => setBirthDate(e.target.value)}
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base font-mono"
                       />
                     </FieldGroup>
@@ -123,15 +169,17 @@ export default function PersonalData() {
                       </div>
                     </FieldGroup>
 
-                    <FieldGroup label="Documento de identificación">
+                    <FieldGroup label="Documento de identificación" hint="Solo dígitos">
                       <Input
-                        placeholder="0.000.000.000"
+                        value={idDocumentNumber}
+                        onChange={(e) => setIdDocumentNumber(e.target.value.replace(/\D/g, ""))}
+                        placeholder="0000000000"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base font-mono"
                       />
                     </FieldGroup>
                   </div>
 
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="mt-4">
                     <FieldGroup label="Régimen tributario">
                       <div className="flex gap-2">
                         {TAX_REGIMES.map((regime) => (
@@ -151,30 +199,6 @@ export default function PersonalData() {
                         ))}
                       </div>
                     </FieldGroup>
-
-                    <FieldGroup label="¿Cobra IVA?">
-                      <div className="flex gap-2">
-                        {(["Sí", "No"] as const).map((option) => {
-                          const isYes = option === "Sí";
-                          const active = isYes ? chargesIva : !chargesIva;
-                          return (
-                            <button
-                              key={option}
-                              type="button"
-                              onClick={() => setChargesIva(isYes)}
-                              className={[
-                                "flex-1 rounded-[10px] py-2.5 text-sm font-semibold transition-colors",
-                                active
-                                  ? "bg-[#182237] text-white"
-                                  : "border border-[#e0d8cc] bg-white text-[#3f4760] hover:border-[#b8b0a5]",
-                              ].join(" ")}
-                            >
-                              {option}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </FieldGroup>
                   </div>
                 </div>
 
@@ -184,23 +208,24 @@ export default function PersonalData() {
                     CONTACTO
                   </p>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <FieldGroup label="Teléfono">
+                    <FieldGroup label="Teléfono" hint="Formato +57 300 000 0000">
                       <Input
                         type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
                         placeholder="+57 300 000 0000"
-                        className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base"
-                      />
-                    </FieldGroup>
-
-                    <FieldGroup label="Correo">
-                      <Input
-                        type="email"
-                        placeholder="tu@correo.com"
                         className="h-11 rounded-[12px] border-[#e0d8cc] bg-white px-4 text-base"
                       />
                     </FieldGroup>
                   </div>
                 </div>
+
+                {submitError && (
+                  <div className="mt-4 rounded-2xl bg-[#fff5f3] px-4 py-3 text-sm text-[#d04f35]">
+                    <span className="font-semibold">Error: </span>
+                    {submitError}
+                  </div>
+                )}
               </article>
             </section>
 
@@ -208,7 +233,8 @@ export default function PersonalData() {
               className="rounded-none border-0 border-t border-[#ddd4c8] px-6"
               savedAt={savedAt}
               onBack={() => navigate(-1)}
-              onNext={() => navigate("/documents")}
+              onNext={handleNext}
+              nextDisabled={!isReady || step1.isPending}
             />
           </div>
 

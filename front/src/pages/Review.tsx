@@ -13,6 +13,7 @@ import {
 
 import { NorthpayHeader } from "@/components/layout/NorthpayHeader";
 import { useApp } from "@/context/appContext";
+import { useDocuments } from "@/lib/queries";
 
 // ─── Resumen de la solicitud ───────────────────────────────────────────────
 // Pantalla terminal del onboarding (diseño pág. 10 "En revisión"). El backend
@@ -43,6 +44,8 @@ function getInitials(name: string) {
 export default function Review() {
   const navigate = useNavigate();
   const { session } = useApp();
+  const { data: signedDocs } = useDocuments("SIGNED_CONTRACT");
+  const signedContractUrl = signedDocs?.[0]?.fileUrl ?? null;
 
   const fullName = session?.fullName ?? "Usuario";
   const initials = getInitials(fullName);
@@ -106,13 +109,17 @@ export default function Review() {
                 Abrir tu panel
                 <ArrowRight className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                className="inline-flex h-11 items-center gap-1.5 rounded-[12px] border border-[#e3d8cb] bg-white px-5 text-base font-semibold text-[#1f2740] hover:border-[#b8b0a5]"
-              >
-                <Download className="h-4 w-4" />
-                Descargar PDF
-              </button>
+              {signedContractUrl && (
+                <a
+                  href={signedContractUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-11 items-center gap-1.5 rounded-[12px] border border-[#e3d8cb] bg-white px-5 text-base font-semibold text-[#1f2740] hover:border-[#b8b0a5]"
+                >
+                  <Download className="h-4 w-4" />
+                  Descargar PDF
+                </a>
+              )}
             </div>
           </div>
 

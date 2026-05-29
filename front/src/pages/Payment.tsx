@@ -7,6 +7,7 @@ import { ProcessPaginationFooter } from "@/components/layout/ProcessPaginationFo
 import { ProcessStatusBar } from "@/components/layout/ProcessStatusBar";
 import { StepsTrackingPanel } from "@/components/layout/StepsTrackingPanel";
 import { useApp } from "@/context/appContext";
+import { ApiError } from "@/lib/api";
 import { useConfigurePayment } from "@/lib/queries";
 
 type Currency = "USD" | "COP" | "EUR" | "USDC";
@@ -216,7 +217,7 @@ function getInitials(name: string) {
 
 export default function Payment() {
   const navigate = useNavigate();
-  const { session, savedAt } = useApp();
+  const { session, savedAt, clearSession } = useApp();
   const paymentMutation = useConfigurePayment();
 
   const [currency, setCurrency] = useState<Currency>("COP");
@@ -263,6 +264,11 @@ export default function Payment() {
       {
         onSuccess: () => navigate("/identityVerify"),
         onError: (err) => {
+          if (err instanceof ApiError && err.status === 401) {
+            clearSession();
+            navigate("/");
+            return;
+          }
           setSubmitError(err instanceof Error ? err.message : "Error al configurar el pago");
         },
       },
