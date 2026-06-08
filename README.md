@@ -38,7 +38,7 @@ Gestión de Correcciones: Flujo en cascada para rechazo técnico con feedback di
 
 Trazabilidad: Auditoría completa de eventos y cambios de estado.
 
-# Calidad y Testing (QA)
+## Calidad y Testing (QA)
 Este proyecto ha sido auditado mediante un protocolo riguroso de QA enfocado en la estabilidad de la API:
 
 Pruebas Funcionales: Validación de reglas de negocio en los 5 pasos de onboarding.
@@ -49,24 +49,24 @@ Optimización: Resolución de incidencias de comunicación HTTP/2 y optimizació
 
 Nota: Se ha implementado una estrategia de mitigación de riesgos que incluye la centralización de transiciones en StateMachineService y una arquitectura preparada para auditoría avanzada.
 
-# Perfiles de Usuario
+## Perfiles de Usuario
 Contratista Remoto: Completa su perfil, sube documentos, firma contratos y configura sus métodos de cobro.
 
 Operador Interno: Monitorea solicitudes, gestiona correcciones y activa las cuentas definitivas mediante el panel de administración.
 
-# Roadmap & Entregables
+## Roadmap & Entregables
 [x] MVP: Flujo funcional básico de 5 pasos.
 
 [x] Documentación Técnica: Especificaciones de API y manuales.
 
 [x] Protocolo QA: Documentación de casos de prueba (CP) y reportes de diagnóstico.
 
-# Notas de Seguridad
+## Notas de Seguridad
 Autenticación: Implementada mediante login con email y contraseña (hash BCrypt). No se requiere Spring Security complejo para esta fase MVP, garantizando agilidad en el despliegue.
 
 Cumplimiento: Encriptación de documentos sensibles y manejo estricto de roles (ADMIN_OP).
 
-# Equipo de Desarrollo & QA
+## Equipo de Desarrollo & QA
 Este proyecto es el resultado de un esfuerzo colaborativo enfocado en la eficiencia operativa y la calidad de software.
 
 Reportes de QA realizados por: Zulay Peraza.
