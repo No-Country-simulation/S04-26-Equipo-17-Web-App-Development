@@ -4,7 +4,7 @@ P# 🧪 Plan de Pruebas y Protocolo de Validación: Ecosistema NorthPay
 El objetivo de este plan es validar el comportamiento funcional, la integridad de las APIs y el control de acceso del MVP de NorthPay. Las pruebas se ejecutan de manera automatizada utilizando **Postman** sobre el entorno de desarrollo backend en Hugging Face Spaces.
 
 * **Criterios de Aceptación:** Validación de códigos de estado HTTP (200 OK, 401 Unauthorized), consistencia en las cabeceras Bearer y persistencia de datos en Supabase.
-* 
+ 
 --Protocolo de Validación y Casos de Prueba: Ecosistema NorthPay v1.0 (Userstories backend.docx)
 1. Módulo de Acceso e Inicio (Pre-Onboarding)
 HU-01: Generación de Invitaciones
