@@ -1,4 +1,4 @@
-# 📋 Protocolo de Validación y Casos de Prueba: Ecosistema NorthPay v1.0
+#  Protocolo de Validación y Casos de Prueba: Ecosistema NorthPay v1.0
 
 ## Módulo 1: Acceso e Inicio (Pre-Onboarding)
 * **HU-01: Generación de Invitaciones**
