@@ -1,4 +1,4 @@
-# 🧪 Plan de Pruebas y Estrategia de Validación: Ecosistema NorthPay
+#  Plan de Pruebas y Estrategia de Validación: Ecosistema NorthPay
 
 ## 1. Alcance y Estrategia
 
